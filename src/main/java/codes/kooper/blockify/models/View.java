@@ -1,6 +1,6 @@
 package codes.kooper.blockify.models;
 
-import codes.kooper.blockify.Blockify;
+import codes.kooper.blockify.BlockifyLibrary;
 import codes.kooper.blockify.types.BlockifyChunk;
 import codes.kooper.blockify.types.BlockifyPosition;
 import lombok.Getter;
@@ -60,7 +60,7 @@ public class View {
 
         // Also update each viewer's cache: data = null means remove the block
         for (Player viewer : stage.getAudience().getOnlinePlayers()) {
-            Blockify.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, null, this.name);
+            BlockifyLibrary.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, null, this.name);
         }
     }
 
@@ -78,7 +78,7 @@ public class View {
             for (BlockifyPosition position : chunkMap.keySet()) {
                 // Apply removal to each viewer
                 for (Player viewer : stage.getAudience().getOnlinePlayers()) {
-                    Blockify.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, null, this.name);
+                    BlockifyLibrary.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, null, this.name);
                 }
             }
         }
@@ -92,7 +92,7 @@ public class View {
 
         // Update each viewer's cache with the new block
         for (Player viewer : stage.getAudience().getOnlinePlayers()) {
-            Blockify.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, newData, this.name);
+            BlockifyLibrary.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, newData, this.name);
         }
     }
 
@@ -138,7 +138,7 @@ public class View {
 
             // Update each viewer's cache with the updated block
             for (Player viewer : stage.getAudience().getOnlinePlayers()) {
-                Blockify.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, blockData, this.name);
+                BlockifyLibrary.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, blockData, this.name);
             }
         }
     }
@@ -151,7 +151,7 @@ public class View {
 
             // Update viewers
             for (Player viewer : stage.getAudience().getOnlinePlayers()) {
-                Blockify.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, newData, this.name);
+                BlockifyLibrary.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, newData, this.name);
             }
         }
     }
@@ -170,7 +170,7 @@ public class View {
                 chunkMap.put(position, newData);
                 // Update viewers
                 for (Player viewer : stage.getAudience().getOnlinePlayers()) {
-                    Blockify.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, newData, this.name);
+                    BlockifyLibrary.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, newData, this.name);
                 }
             }
         }

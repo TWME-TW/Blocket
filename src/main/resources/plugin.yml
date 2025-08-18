@@ -1,5 +1,5 @@
 name: Blockify
 version: '1.0-SNAPSHOT'
-main: codes.kooper.blockify.Blockify
+main: codes.kooper.blockify.plugin.Blockify
 api-version: '1.21'
 depend: [PacketEvents]
