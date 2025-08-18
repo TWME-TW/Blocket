@@ -1,6 +1,6 @@
-package codes.kooper.blockify.protocol;
+package codes.kooper.blockify.plugin.protocol;
 
-import codes.kooper.blockify.Blockify;
+import codes.kooper.blockify.BlockifyLibrary;
 import codes.kooper.blockify.events.BlockifyBreakEvent;
 import codes.kooper.blockify.events.BlockifyInteractEvent;
 import codes.kooper.blockify.models.Stage;
@@ -34,7 +34,7 @@ public class BlockDigAdapter extends SimplePacketListenerAbstract {
             Player player = event.getPlayer();
 
             // Get stages the player is in. If the player is not in any stages, return.
-            List<Stage> stages = Blockify.getInstance().getStageManager().getStages(player);
+            List<Stage> stages = BlockifyLibrary.getInstance().getStageManager().getStages(player);
             if (stages == null || stages.isEmpty()) {
                 return;
             }
@@ -51,7 +51,7 @@ public class BlockDigAdapter extends SimplePacketListenerAbstract {
                         BlockData blockData = view.getBlock(position);
 
                         // Call BlockifyInteractEvent to handle custom interaction
-                        Bukkit.getScheduler().runTask(Blockify.getInstance(), () -> new BlockifyInteractEvent(player, position, blockData, view, view.getStage()).callEvent());
+                        BlockifyLibrary.getInstance().getTaskScheduler().runTask(() -> new BlockifyInteractEvent(player, position, blockData, view, view.getStage()).callEvent());
 
                         // Check if block is breakable, if not, send block change packet to cancel the break
                         if (!view.isBreakable()) {

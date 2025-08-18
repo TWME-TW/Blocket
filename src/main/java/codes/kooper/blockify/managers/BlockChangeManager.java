@@ -1,6 +1,6 @@
 package codes.kooper.blockify.managers;
 
-import codes.kooper.blockify.Blockify;
+import codes.kooper.blockify.BlockifyLibrary;
 import codes.kooper.blockify.events.OnBlockChangeSendEvent;
 import codes.kooper.blockify.models.Audience;
 import codes.kooper.blockify.models.Stage;
@@ -24,7 +24,6 @@ import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -32,7 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Getter
 public class BlockChangeManager {
-    private final ConcurrentHashMap<UUID, BukkitTask> blockChangeTasks = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Integer> blockChangeTasks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<BlockData, Integer> blockDataToId = new ConcurrentHashMap<>();
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -187,12 +186,12 @@ public class BlockChangeManager {
             if (!player.isOnline() || player.getWorld() != stage.getWorld()) continue;
 
             Map<BlockifyChunk, Map<BlockifyPosition, BlockData>> blockChanges = getBlockChangesForPlayer(player, chunks);
-            Bukkit.getScheduler().runTask(Blockify.getInstance(), () -> new OnBlockChangeSendEvent(stage, blockChanges).callEvent());
+            BlockifyLibrary.getInstance().getTaskScheduler().runTask(() -> new OnBlockChangeSendEvent(stage, blockChanges).callEvent());
 
             AtomicInteger chunkIndex = new AtomicInteger(0);
             List<BlockifyChunk> chunkList = new ArrayList<>(chunks);
 
-            BukkitTask task = Bukkit.getScheduler().runTaskTimer(Blockify.getInstance(), () -> {
+            int taskId = BlockifyLibrary.getInstance().getTaskScheduler().scheduleRepeatingTask(() -> {
                 if (chunkIndex.get() >= chunkList.size()) {
                     cancelTask(player.getUniqueId());
                     return;
@@ -202,7 +201,7 @@ public class BlockChangeManager {
                 }
             }, 0L, 1L);
 
-            blockChangeTasks.put(player.getUniqueId(), task);
+            blockChangeTasks.put(player.getUniqueId(), taskId);
         }
     }
 
@@ -217,7 +216,10 @@ public class BlockChangeManager {
     }
 
     private void cancelTask(UUID playerId) {
-        Optional.ofNullable(blockChangeTasks.remove(playerId)).ifPresent(BukkitTask::cancel);
+        Integer taskId = blockChangeTasks.remove(playerId);
+        if (taskId != null) {
+            BlockifyLibrary.getInstance().getTaskScheduler().cancelTask(taskId);
+        }
     }
 
     public void sendChunkPacket(Player player, BlockifyChunk chunk, boolean unload) {

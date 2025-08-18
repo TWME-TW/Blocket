@@ -1,6 +1,6 @@
 package codes.kooper.blockify.managers;
 
-import codes.kooper.blockify.Blockify;
+import codes.kooper.blockify.BlockifyLibrary;
 import codes.kooper.blockify.events.CreateStageEvent;
 import codes.kooper.blockify.events.DeleteStageEvent;
 import codes.kooper.blockify.models.Stage;
@@ -27,10 +27,15 @@ public class StageManager {
      */
     public void createStage(Stage stage) {
         if (stages.containsKey(stage.getName())) {
-            Blockify.getInstance().getLogger().warning("Stage with name " + stage.getName() + " already exists!");
+            BlockifyLibrary.getInstance().getLogger().warning("Stage with name " + stage.getName() + " already exists!");
             return;
         }
-        Bukkit.getScheduler().runTask(Blockify.getInstance(), () -> new CreateStageEvent(stage).callEvent());
+        
+        // Only call Bukkit event if running in a Bukkit environment
+        if (isBukkitAvailable()) {
+            BlockifyLibrary.getInstance().getTaskScheduler().runTask(() -> new CreateStageEvent(stage).callEvent());
+        }
+        
         stages.put(stage.getName(), stage);
     }
 
@@ -48,7 +53,10 @@ public class StageManager {
      * @param name Name of the stage
      */
     public void deleteStage(String name) {
-        new DeleteStageEvent(stages.get(name)).callEvent();
+        Stage stage = stages.get(name);
+        if (stage != null && isBukkitAvailable()) {
+            new DeleteStageEvent(stage).callEvent();
+        }
         stages.remove(name);
     }
 
@@ -73,5 +81,18 @@ public class StageManager {
             }
         }
         return stages;
+    }
+    
+    /**
+     * Check if Bukkit is available in the current environment
+     * @return true if Bukkit is available
+     */
+    private boolean isBukkitAvailable() {
+        try {
+            Class.forName("org.bukkit.Bukkit");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 }

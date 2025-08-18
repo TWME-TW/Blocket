@@ -1,6 +1,6 @@
-package codes.kooper.blockify.listeners;
+package codes.kooper.blockify.plugin.listeners;
 
-import codes.kooper.blockify.Blockify;
+import codes.kooper.blockify.BlockifyLibrary;
 import codes.kooper.blockify.events.PlayerEnterStageEvent;
 import codes.kooper.blockify.events.PlayerExitStageEvent;
 import codes.kooper.blockify.events.PlayerJoinStageEvent;
@@ -33,7 +33,7 @@ public class StageBoundListener implements Listener {
                     if (player == null) {
                         return Collections.emptyList();
                     }
-                    return Blockify.getInstance().getStageManager().getStages(player);
+                    return BlockifyLibrary.getInstance().getStageManager().getStages(player);
                 }
             });
 
