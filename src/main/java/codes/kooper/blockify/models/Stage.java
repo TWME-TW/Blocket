@@ -1,16 +1,17 @@
 package codes.kooper.blockify.models;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.entity.Player;
+
 import codes.kooper.blockify.api.BlockifyAPI;
 import codes.kooper.blockify.types.BlockifyChunk;
 import codes.kooper.blockify.types.BlockifyPosition;
 import lombok.Getter;
 import lombok.Setter;
-import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.entity.Player;
-
-import java.util.HashSet;
-import java.util.Set;
 
 @Getter
 @Setter

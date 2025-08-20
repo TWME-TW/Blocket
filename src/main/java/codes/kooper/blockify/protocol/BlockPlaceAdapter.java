@@ -1,20 +1,22 @@
 package codes.kooper.blockify.protocol;
 
-import codes.kooper.blockify.api.BlockifyAPI;
-import codes.kooper.blockify.events.BlockifyPlaceEvent;
-import codes.kooper.blockify.models.Stage;
-import codes.kooper.blockify.models.View;
-import codes.kooper.blockify.types.BlockifyPosition;
+import java.util.List;
+
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+
 import com.github.retrooper.packetevents.event.SimplePacketListenerAbstract;
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerBlockPlacement;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerBlockChange;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 
-import java.util.List;
+import codes.kooper.blockify.api.BlockifyAPI;
+import codes.kooper.blockify.events.BlockifyPlaceEvent;
+import codes.kooper.blockify.models.Stage;
+import codes.kooper.blockify.models.View;
+import codes.kooper.blockify.types.BlockifyPosition;
 
 public class BlockPlaceAdapter extends SimplePacketListenerAbstract {
 

@@ -1,15 +1,8 @@
 package codes.kooper.blockify.protocol;
 
-import codes.kooper.blockify.api.BlockifyAPI;
-import codes.kooper.blockify.events.BlockifyBreakEvent;
-import codes.kooper.blockify.events.BlockifyInteractEvent;
-import codes.kooper.blockify.models.Stage;
-import codes.kooper.blockify.types.BlockifyPosition;
-import com.github.retrooper.packetevents.event.SimplePacketListenerAbstract;
-import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.player.DiggingAction;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
+import java.util.List;
+import java.util.Objects;
+
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -18,8 +11,17 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 
-import java.util.List;
-import java.util.Objects;
+import com.github.retrooper.packetevents.event.SimplePacketListenerAbstract;
+import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.player.DiggingAction;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
+
+import codes.kooper.blockify.api.BlockifyAPI;
+import codes.kooper.blockify.events.BlockifyBreakEvent;
+import codes.kooper.blockify.events.BlockifyInteractEvent;
+import codes.kooper.blockify.models.Stage;
+import codes.kooper.blockify.types.BlockifyPosition;
 
 public class BlockDigAdapter extends SimplePacketListenerAbstract {
 

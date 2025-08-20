@@ -1,15 +1,17 @@
 package codes.kooper.blockify.protocol;
 
-import codes.kooper.blockify.api.BlockifyAPI;
-import codes.kooper.blockify.models.Stage;
-import codes.kooper.blockify.types.BlockifyChunk;
+import java.util.List;
+
+import org.bukkit.entity.Player;
+
 import com.github.retrooper.packetevents.event.SimplePacketListenerAbstract;
 import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChunkData;
-import org.bukkit.entity.Player;
 
-import java.util.List;
+import codes.kooper.blockify.api.BlockifyAPI;
+import codes.kooper.blockify.models.Stage;
+import codes.kooper.blockify.types.BlockifyChunk;
 
 public class ChunkLoadAdapter extends SimplePacketListenerAbstract {
 

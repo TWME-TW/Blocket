@@ -1,14 +1,11 @@
 package codes.kooper.blockify.listeners;
 
-import codes.kooper.blockify.api.BlockifyAPI;
-import codes.kooper.blockify.events.PlayerEnterStageEvent;
-import codes.kooper.blockify.events.PlayerExitStageEvent;
-import codes.kooper.blockify.events.PlayerJoinStageEvent;
-import codes.kooper.blockify.events.PlayerLeaveStageEvent;
-import codes.kooper.blockify.models.Stage;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,11 +13,16 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+
+import codes.kooper.blockify.api.BlockifyAPI;
+import codes.kooper.blockify.events.PlayerEnterStageEvent;
+import codes.kooper.blockify.events.PlayerExitStageEvent;
+import codes.kooper.blockify.events.PlayerJoinStageEvent;
+import codes.kooper.blockify.events.PlayerLeaveStageEvent;
+import codes.kooper.blockify.models.Stage;
 
 public class StageBoundListener implements Listener {
 

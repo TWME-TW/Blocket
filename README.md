@@ -379,6 +379,3 @@ Blockify 已成功從 Bukkit 插件重構為獨立開發庫！主要改變包括
 - `blockify-api-1.0.0-sources.jar` - 源碼文件
 
 開發者現在可以直接將 Blockify 作為依賴項整合到他們的插件中，無需單獨安裝插件！
-
-## Statistics
-Check out our [bStats page](https://bstats.org/plugin/bukkit/Blockify/21782)

@@ -1,15 +1,16 @@
 package codes.kooper.blockify.models;
 
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.bukkit.block.data.BlockData;
+import org.bukkit.entity.Player;
+
 import codes.kooper.blockify.api.BlockifyAPI;
 import codes.kooper.blockify.types.BlockifyChunk;
 import codes.kooper.blockify.types.BlockifyPosition;
 import lombok.Getter;
 import lombok.Setter;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.Player;
-
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
 @Setter
