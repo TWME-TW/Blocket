@@ -1,6 +1,6 @@
 package codes.kooper.blockify.protocol;
 
-import codes.kooper.blockify.Blockify;
+import codes.kooper.blockify.api.BlockifyAPI;
 import codes.kooper.blockify.events.BlockifyPlaceEvent;
 import codes.kooper.blockify.models.Stage;
 import codes.kooper.blockify.models.View;
@@ -26,7 +26,7 @@ public class BlockPlaceAdapter extends SimplePacketListenerAbstract {
             Player player = event.getPlayer();
 
             // Get the stages the player is in. If the player is not in any stages, return.
-            List<Stage> stages = Blockify.getInstance().getStageManager().getStages(player);
+            List<Stage> stages = BlockifyAPI.getInstance().getStageManager().getStages(player);
             if (stages == null || stages.isEmpty()) {
                 return;
             }
@@ -39,7 +39,7 @@ public class BlockPlaceAdapter extends SimplePacketListenerAbstract {
                 for (View view : stage.getViews()) {
                     if (view.hasBlock(position)) {
                         // Call the event and cancel the placement
-                        Bukkit.getScheduler().runTask(Blockify.getInstance(), () -> new BlockifyPlaceEvent(player, position, view, stage).callEvent());
+                        Bukkit.getScheduler().runTask(BlockifyAPI.getInstance().getOwnerPlugin(), () -> new BlockifyPlaceEvent(player, position, view, stage).callEvent());
                         event.setCancelled(true);
                         return;
                     }
@@ -55,7 +55,7 @@ public class BlockPlaceAdapter extends SimplePacketListenerAbstract {
             Player player = event.getPlayer();
 
             // Get the stages the player is in. If the player is not in any stages, return.
-            List<Stage> stages = Blockify.getInstance().getStageManager().getStages(player);
+            List<Stage> stages = BlockifyAPI.getInstance().getStageManager().getStages(player);
             if (stages == null || stages.isEmpty()) {
                 return;
             }

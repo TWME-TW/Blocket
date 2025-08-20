@@ -1,6 +1,6 @@
 package codes.kooper.blockify.models;
 
-import codes.kooper.blockify.Blockify;
+import codes.kooper.blockify.api.BlockifyAPI;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.entity.Player;
@@ -95,7 +95,7 @@ public class Audience {
     public Set<Player> getOnlinePlayers() {
         List<Player> onlinePlayers = new ArrayList<>();
         for (UUID player : players) {
-            Player p = Blockify.getInstance().getServer().getPlayer(player);
+            Player p = BlockifyAPI.getInstance().getOwnerPlugin().getServer().getPlayer(player);
             if (p != null) {
                 onlinePlayers.add(p);
             }
@@ -120,7 +120,7 @@ public class Audience {
      */
     public void setMiningSpeed(UUID player, float speed) {
         if (speed < 0 || speed == 1) {
-            Blockify.getInstance().getLogger().warning("Invalid mining speed for player " + player + ": " + speed);
+            BlockifyAPI.getInstance().getOwnerPlugin().getLogger().warning("Invalid mining speed for player " + player + ": " + speed);
             return;
         }
         miningSpeeds.put(player, speed);

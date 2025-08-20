@@ -1,6 +1,6 @@
 package codes.kooper.blockify.protocol;
 
-import codes.kooper.blockify.Blockify;
+import codes.kooper.blockify.api.BlockifyAPI;
 import codes.kooper.blockify.models.Stage;
 import codes.kooper.blockify.types.BlockifyChunk;
 import com.github.retrooper.packetevents.event.SimplePacketListenerAbstract;
@@ -24,7 +24,7 @@ public class ChunkLoadAdapter extends SimplePacketListenerAbstract {
             int chunkZ = chunkData.getColumn().getZ();
 
             // Get the stages the player is in. If the player is not in any stages, return.
-            List<Stage> stages = Blockify.getInstance().getStageManager().getStages(player);
+            List<Stage> stages = BlockifyAPI.getInstance().getStageManager().getStages(player);
             if (stages == null || stages.isEmpty()) {
                 return;
             }
@@ -42,7 +42,7 @@ public class ChunkLoadAdapter extends SimplePacketListenerAbstract {
                     event.setCancelled(true);
 
                     // Send the chunk packet to the player
-                    Blockify.getInstance().getBlockChangeManager().getExecutorService().submit(() -> Blockify.getInstance().getBlockChangeManager().sendChunkPacket(player, blockifyChunk, false));
+                    BlockifyAPI.getInstance().getBlockChangeManager().getExecutorService().submit(() -> BlockifyAPI.getInstance().getBlockChangeManager().sendChunkPacket(player, blockifyChunk, false));
                 }
             }
         }

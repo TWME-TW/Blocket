@@ -5,6 +5,8 @@
 [![](https://img.shields.io/github/license/kooperlol/blockify.svg)](https://github.com/Kooperlol/Blockify/blob/master/LICENSE.md) [![](https://jitpack.io/v/Kooperlol/Blockify.svg)](https://jitpack.io/#Kooperlol/Blockify) [![](https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/HeH2CuFCjz)
 
 # About
+**✅ 重構完成！** Blockify 已成功從插件轉換為獨立開發庫。
+
 Ever wondered how servers like FadeCloud or AkumaMC do private farms and mines?
 Well, let Blockify take care of it for you! Blockify is a public library that can manage and create client-sided blocks.
 
@@ -352,6 +354,31 @@ public class MinePlugin extends JavaPlugin {
    
 ## Dependencies
 - [PacketEvents](https://github.com/retrooper/packetevents)
+
+## 🎉 重構完成摘要
+
+Blockify 已成功從 Bukkit 插件重構為獨立開發庫！主要改變包括：
+
+### ✅ 已完成的改變
+- **新 API 架構**: 創建了 `BlockifyAPI` 類作為主要入口點
+- **配置系統**: 實現了 `BlockifyConfig` 用於靈活配置
+- **依賴注入**: 所有管理器類現在使用 API 參考而非靜態單例
+- **生命週期管理**: 提供了適當的初始化和關閉方法
+- **Maven 配置**: 更新為庫分發配置，生成帶源碼的 JAR
+- **文檔更新**: 完整的 API 文檔、安裝指南和遷移指南
+- **示例代碼**: 提供完整的使用範例和最佳實踐
+
+### 🔄 架構變更
+- 移除了舊的插件主類 (`Blockify.java`)
+- 移除了 `plugin.yml` （不再需要）
+- 所有 `Blockify.getInstance()` 調用更新為 `BlockifyAPI.getInstance()`
+- 管理器類現在接受 `BlockifyAPI` 參數而非使用靜態訪問
+
+### 📦 輸出文件
+- `blockify-api-1.0.0.jar` - 主要庫文件
+- `blockify-api-1.0.0-sources.jar` - 源碼文件
+
+開發者現在可以直接將 Blockify 作為依賴項整合到他們的插件中，無需單獨安裝插件！
 
 ## Statistics
 Check out our [bStats page](https://bstats.org/plugin/bukkit/Blockify/21782)

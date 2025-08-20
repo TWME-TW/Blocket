@@ -1,6 +1,6 @@
 package codes.kooper.blockify.models;
 
-import codes.kooper.blockify.Blockify;
+import codes.kooper.blockify.api.BlockifyAPI;
 import codes.kooper.blockify.types.BlockifyChunk;
 import codes.kooper.blockify.types.BlockifyPosition;
 import lombok.Getter;
@@ -44,7 +44,7 @@ public class Stage {
      * Call this after you've done incremental updates (e.g., added/removed views for players).
      */
     public void sendBlocksToAudience() {
-        Blockify.getInstance().getBlockChangeManager().sendBlockChanges(this, audience, getChunks(), false);
+        BlockifyAPI.getInstance().getBlockChangeManager().sendBlockChanges(this, audience, getChunks(), false);
     }
 
     /**
@@ -53,13 +53,13 @@ public class Stage {
      */
     public void refreshBlocksToAudience(Set<BlockifyPosition> blocks) {
         for (Player player : audience.getOnlinePlayers()) {
-            Blockify.getInstance().getBlockChangeManager().sendMultiBlockChange(player, blocks);
+            BlockifyAPI.getInstance().getBlockChangeManager().sendMultiBlockChange(player, blocks);
         }
     }
 
     public void addView(View view) {
         if (views.stream().anyMatch(v -> v.getName().equalsIgnoreCase(view.getName()))) {
-            Blockify.getInstance().getLogger().warning("View with name " + view.getName() + " already exists in stage " + name + "!");
+            BlockifyAPI.getInstance().getOwnerPlugin().getLogger().warning("View with name " + view.getName() + " already exists in stage " + name + "!");
             return;
         }
         views.add(view);
@@ -96,7 +96,7 @@ public class Stage {
      */
     public void addViewForPlayer(Player player, View view) {
         // This method uses BlockChangeManager's addViewToPlayer to merge the view's blocks into player's cache
-        Blockify.getInstance().getBlockChangeManager().addViewToPlayer(player, view);
+        BlockifyAPI.getInstance().getBlockChangeManager().addViewToPlayer(player, view);
         // After updating what the player sees, refresh all blocks
         sendBlocksToAudience();
     }
@@ -120,7 +120,7 @@ public class Stage {
      */
     public void removeViewForPlayer(Player player, View view) {
         // Remove view's blocks from player's cache
-        Blockify.getInstance().getBlockChangeManager().removeViewFromPlayer(player, view);
+        BlockifyAPI.getInstance().getBlockChangeManager().removeViewFromPlayer(player, view);
         // Refresh all blocks for audience after removing the view
         sendBlocksToAudience();
     }
