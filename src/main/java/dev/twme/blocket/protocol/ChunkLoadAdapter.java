@@ -25,7 +25,6 @@ import dev.twme.blocket.types.BlocketChunk;
  *   <li>Generation of custom chunk packets with virtual block data</li>
  *   <li>Asynchronous chunk processing for performance</li>
  * </ul>
- * </p>
  * 
  * <p>This adapter is crucial for ensuring that players see virtual blocks
  * when chunks are loaded or reloaded, maintaining consistency between
@@ -49,7 +48,6 @@ public class ChunkLoadAdapter extends SimplePacketListenerAbstract {
      *   <li>Cancels the original packet if virtual blocks are present</li>
      *   <li>Submits custom chunk generation to the executor service</li>
      * </ul>
-     * </p>
      * 
      * @param event The packet event containing chunk data information
      */

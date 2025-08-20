@@ -23,7 +23,6 @@ import dev.twme.blocket.types.BlocketPosition;
  *   <li>Block age manipulation for crops and similar blocks</li>
  *   <li>Efficient block position calculations</li>
  * </ul>
- * </p>
  * 
  * <p>Performance consideration: The block enumeration methods can generate
  * large amounts of data for big regions. It is recommended to call these

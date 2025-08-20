@@ -36,7 +36,6 @@ import dev.twme.blocket.types.BlocketPosition;
  *   <li>Creative mode handling</li>
  *   <li>Event cancellation for non-breakable blocks</li>
  * </ul>
- * </p>
  * 
  * @author TWME-TW
  * @version 1.0.0
