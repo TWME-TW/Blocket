@@ -75,10 +75,15 @@ public class StageManager {
     /**
      * Delete a stage by name
      * @param name Name of the stage
+     * @return true if the stage was deleted, false if not found
      */
-    public void deleteStage(String name) {
+    public boolean deleteStage(String name) {
+        if (!stages.containsKey(name)) {
+            return false;
+        }
         new DeleteStageEvent(stages.get(name)).callEvent();
         stages.remove(name);
+        return true;
     }
 
     /**

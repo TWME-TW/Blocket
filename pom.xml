@@ -6,7 +6,7 @@
 
     <groupId>dev.twme</groupId>
     <artifactId>blocket-api</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.1.2</version>
     <packaging>jar</packaging>
 
     <name>Blocket API</name>
@@ -110,8 +110,8 @@
 
     <distributionManagement>
         <repository>
-            <id>twme-repo-releases</id>
-            <url>https://repo.twme.dev/releases</url>
+            <id>twme-repo-snapshots</id>
+            <url>https://repo.twme.dev/snapshots</url>
         </repository>
     </distributionManagement>
 </project>

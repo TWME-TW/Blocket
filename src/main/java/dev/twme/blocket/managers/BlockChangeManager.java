@@ -391,15 +391,62 @@ public class BlockChangeManager {
                 chunks.add(baseChunk);
             }
 
+            // Create light data arrays
+            byte[][] blockLightArray = new byte[ySections][];
+            byte[][] skyLightArray = new byte[ySections][];
+            
+            // Initialize light data arrays
+            for (int i = 0; i < ySections; i++) {
+                blockLightArray[i] = new byte[2048];
+                skyLightArray[i] = new byte[2048];
+            }
+            
+            // Populate light data from chunk snapshot
+            for (int section = 0; section < ySections; section++) {
+                int baseY = (section << 4) + minHeight;
+                for (int x = 0; x < 16; x++) {
+                    for (int y = 0; y < 16; y++) {
+                        int worldY = baseY + y;
+                        if (worldY >= minHeight && worldY < maxHeight) {
+                            for (int z = 0; z < 16; z++) {
+                                int blockLight = chunkSnapshot.getBlockEmittedLight(x, worldY, z);
+                                int skyLight = chunkSnapshot.getBlockSkyLight(x, worldY, z);
+                                
+                                // Pack light data into the array
+                                int index = y << 8 | z << 4 | x;
+                                int byteIndex = index >> 1;
+                                int nibbleIndex = index & 1;
+                                
+                                if (nibbleIndex == 0) {
+                                    blockLightArray[section][byteIndex] = (byte) ((blockLightArray[section][byteIndex] & 0xF0) | (blockLight & 0xF));
+                                    skyLightArray[section][byteIndex] = (byte) ((skyLightArray[section][byteIndex] & 0xF0) | (skyLight & 0xF));
+                                } else {
+                                    blockLightArray[section][byteIndex] = (byte) ((blockLightArray[section][byteIndex] & 0x0F) | ((blockLight & 0xF) << 4));
+                                    skyLightArray[section][byteIndex] = (byte) ((skyLightArray[section][byteIndex] & 0x0F) | ((skyLight & 0xF) << 4));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
             LightData lightData = new LightData();
-            lightData.setBlockLightArray(emptyLightArray);
-            lightData.setSkyLightArray(emptyLightArray);
-            lightData.setBlockLightCount(0); // No light data provided
-            lightData.setSkyLightCount(0); // No light data provided
-            lightData.setBlockLightMask(fullBitSet); // Empty mask
-            lightData.setSkyLightMask(fullBitSet); // Empty mask
-            lightData.setEmptyBlockLightMask(emptyBitSet);
-            lightData.setEmptySkyLightMask(emptyBitSet);
+            lightData.setBlockLightArray(blockLightArray);
+            lightData.setSkyLightArray(skyLightArray);
+            lightData.setBlockLightCount(ySections);
+            lightData.setSkyLightCount(ySections);
+            
+            // Set light masks
+            BitSet blockLightMask = new BitSet(ySections);
+            BitSet skyLightMask = new BitSet(ySections);
+            for (int i = 0; i < ySections; i++) {
+                blockLightMask.set(i);
+                skyLightMask.set(i);
+            }
+            lightData.setBlockLightMask(blockLightMask);
+            lightData.setSkyLightMask(skyLightMask);
+            lightData.setEmptyBlockLightMask(new BitSet(ySections)); // No empty sections
+            lightData.setEmptySkyLightMask(new BitSet(ySections)); // No empty sections
 
             Column column = new Column(chunk.x(), chunk.z(), true, chunks.toArray(BaseChunk[]::new), null);
             WrapperPlayServerUnloadChunk wrapperPlayServerUnloadChunk = new WrapperPlayServerUnloadChunk(chunk.x(), chunk.z());
