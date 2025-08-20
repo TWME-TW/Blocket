@@ -91,9 +91,10 @@ blockifyAPI.getBlockChangeManager().sendBlockChanges(...);
 ### 步驟 4: 更新導入語句
 
 #### 新增導入
+
 ```java
-import codes.kooper.blockify.api.BlockifyAPI;
-import codes.kooper.blockify.api.BlockifyConfig;
+
+
 ```
 
 #### 移除導入 (如果不再需要)

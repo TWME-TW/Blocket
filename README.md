@@ -21,7 +21,7 @@ Add this to your plugin's `pom.xml`:
 
 ```xml
 <dependency>
-    <groupId>codes.kooper</groupId>
+    <groupId>dev.twme</groupId>
     <artifactId>blockify-api</artifactId>
     <version>1.0.0</version>
     <scope>compile</scope>
@@ -120,65 +120,89 @@ public class MyPlugin extends JavaPlugin {
 ```
 
 #### 1. 建立觀眾群體
+
 ```java
-import codes.kooper.blockify.models.Audience;
+import models.dev.twme.blocket.Audience;
 
 // 從玩家集合建立觀眾
 Set<Player> players = Set.of(player1, player2);
-Audience audience = Audience.fromPlayers(players);
+        Audience audience = Audience.fromPlayers(players);
 
-// 或從 UUID 集合建立
-Set<UUID> playerUUIDs = Set.of(uuid1, uuid2);
-Audience audience = Audience.fromUUIDs(playerUUIDs);
+        // 或從 UUID 集合建立
+        Set<UUID> playerUUIDs = Set.of(uuid1, uuid2);
+        Audience audience = Audience.fromUUIDs(playerUUIDs);
 ```
 
 #### 2. 定義方塊模式
+
 ```java
-import codes.kooper.blockify.models.Pattern;
+import models.dev.twme.blocket.Pattern;
 import org.bukkit.Material;
 
 // 建立方塊模式（支援權重分配）
 Map<BlockData, Double> blockPattern = new HashMap<>();
-blockPattern.put(Material.STONE.createBlockData(), 70.0); // 70% 機率
-blockPattern.put(Material.COAL_ORE.createBlockData(), 20.0); // 20% 機率
-blockPattern.put(Material.IRON_ORE.createBlockData(), 10.0); // 10% 機率
+blockPattern.
 
-Pattern pattern = new Pattern(blockPattern);
+        put(Material.STONE.createBlockData(), 70.0); // 70% 機率
+        blockPattern.
+
+        put(Material.COAL_ORE.createBlockData(), 20.0); // 20% 機率
+        blockPattern.
+
+        put(Material.IRON_ORE.createBlockData(), 10.0); // 10% 機率
+
+        Pattern pattern = new Pattern(blockPattern);
 ```
 
 #### 3. 建立舞台
+
 ```java
-import codes.kooper.blockify.models.Stage;
-import codes.kooper.blockify.types.BlockifyPosition;
+import models.dev.twme.blocket.Stage;
+import types.dev.twme.blocket.BlockifyPosition;
 
 // 定義舞台範圍
 BlockifyPosition pos1 = new BlockifyPosition(100, 60, 100);
-BlockifyPosition pos2 = new BlockifyPosition(150, 100, 150);
+        BlockifyPosition pos2 = new BlockifyPosition(150, 100, 150);
 
-// 建立舞台
-Stage stage = new Stage("my-mine", world, pos1, pos2, audience);
+        // 建立舞台
+        Stage stage = new Stage("my-mine", world, pos1, pos2, audience);
 
 // 註冊舞台到管理器
-Blockify.getInstance().getStageManager().createStage(stage);
+Blockify.
+
+        getInstance().
+
+        getStageManager().
+
+        createStage(stage);
 ```
 
 #### 4. 建立視圖並添加方塊
+
 ```java
-import codes.kooper.blockify.models.View;
+import models.dev.twme.blocket.View;
 
 // 建立視圖
 View view = new View("ore-layer", stage, pattern, true); // true = 可破壞
-view.setZIndex(1); // 設定圖層優先級
+view.
+
+        setZIndex(1); // 設定圖層優先級
 
 // 添加視圖到舞台
-stage.addView(view);
+stage.
 
-// 添加方塊到視圖
-Set<BlockifyPosition> positions = BlockUtils.getBlocksBetween(pos1, pos2);
-view.addBlocks(positions);
+        addView(view);
+
+        // 添加方塊到視圖
+        Set<BlockifyPosition> positions = BlockUtils.getBlocksBetween(pos1, pos2);
+view.
+
+        addBlocks(positions);
 
 // 發送方塊變化給觀眾
-stage.sendBlocksToAudience();
+stage.
+
+        sendBlocksToAudience();
 ```
 
 ### 高級功能
@@ -235,15 +259,18 @@ audience.resetMiningSpeed(player);
 ```
 
 #### 事件處理
+
 ```java
-import codes.kooper.blockify.events.*;
+import dev.twme.blocket.events.BlockifyBreakEvent;
+import dev.twme.blocket.events.BlockifyInteractEvent;
+import dev.twme.blocket.events.PlayerEnterStageEvent;
 
 @EventHandler
 public void onBlockifyBreak(BlockifyBreakEvent event) {
     Player player = event.getPlayer();
     BlockifyPosition position = event.getPosition();
     View view = event.getView();
-    
+
     // 自定義破壞邏輯
     if (shouldCancelBreak(player)) {
         event.setCancelled(true);
@@ -264,33 +291,35 @@ public void onPlayerEnterStage(PlayerEnterStageEvent event) {
 ### 實用工具
 
 #### BlockUtils 工具類
+
 ```java
-import codes.kooper.blockify.utils.BlockUtils;
+import utils.dev.twme.blocket.BlockUtils;
 
 // 獲取兩點間的所有方塊位置
 Set<BlockifyPosition> blocks = BlockUtils.getBlocksBetween(pos1, pos2);
 
-// 設定作物年齡
-BlockData wheatData = Material.WHEAT.createBlockData();
-BlockData agedWheat = BlockUtils.setAge(wheatData, 7); // 完全成熟
+        // 設定作物年齡
+        BlockData wheatData = Material.WHEAT.createBlockData();
+        BlockData agedWheat = BlockUtils.setAge(wheatData, 7); // 完全成熟
 ```
 
 #### 位置轉換
+
 ```java
-import codes.kooper.blockify.types.BlockifyPosition;
-import codes.kooper.blockify.types.BlockifyChunk;
+import types.dev.twme.blocket.BlockifyPosition;
+import types.dev.twme.blocket.BlockifyChunk;
 
 // 從 Location 建立 BlockifyPosition
 BlockifyPosition pos = BlockifyPosition.fromLocation(location);
 
-// 轉換為其他格式
-Location loc = pos.toLocation(world);
-Vector vector = pos.toVector();
-BlockifyChunk chunk = pos.toBlockifyChunk();
+        // 轉換為其他格式
+        Location loc = pos.toLocation(world);
+        Vector vector = pos.toVector();
+        BlockifyChunk chunk = pos.toBlockifyChunk();
 
-// 計算距離
-double distance = pos1.distance(pos2);
-double distanceSquared = pos1.distanceSquared(pos2);
+        // 計算距離
+        double distance = pos1.distance(pos2);
+        double distanceSquared = pos1.distanceSquared(pos2);
 ```
 
 ### 完整範例：建立礦場
