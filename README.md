@@ -13,6 +13,12 @@ Ever wondered how servers like FadeCloud or AkumaMC implement private farms and 
 Add the following to your plugin's `pom.xml`:
 
 ```xml
+<repository>
+    <id>twme-repo-releases</id>
+    <name>TWME Repository</name>
+    <url>https://repo.twme.dev/releases</url>
+</repository>
+
 <dependency>
     <groupId>dev.twme</groupId>
     <artifactId>blocket-api</artifactId>
@@ -26,6 +32,11 @@ Add the following to your plugin's `pom.xml`:
 Add the following to your plugin's `build.gradle`:
 
 ```gradle
+repositories {
+    maven {
+        url 'https://repo.twme.dev/releases'
+    }
+}
 dependencies {
     implementation 'dev.twme:blocket-api:1.0.0'
 }

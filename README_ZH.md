@@ -15,6 +15,12 @@ Blocket 是一個開發庫，可以幫助您管理和創建客戶端的虛擬方
 在您的插件的 `pom.xml` 中添加以下內容：
 
 ```xml
+<repository>
+    <id>twme-repo-releases</id>
+    <name>TWME Repository</name>
+    <url>https://repo.twme.dev/releases</url>
+</repository>
+
 <dependency>
     <groupId>dev.twme</groupId>
     <artifactId>blocket-api</artifactId>
@@ -28,6 +34,11 @@ Blocket 是一個開發庫，可以幫助您管理和創建客戶端的虛擬方
 在您的插件的 `build.gradle` 中添加以下內容：
 
 ```gradle
+repositories {
+    maven {
+        url 'https://repo.twme.dev/releases'
+    }
+}
 dependencies {
     implementation 'dev.twme:blocket-api:1.0.0'
 }
