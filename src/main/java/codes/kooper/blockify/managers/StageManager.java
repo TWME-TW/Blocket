@@ -1,23 +1,26 @@
 package codes.kooper.blockify.managers;
 
-import codes.kooper.blockify.Blockify;
-import codes.kooper.blockify.events.CreateStageEvent;
-import codes.kooper.blockify.events.DeleteStageEvent;
-import codes.kooper.blockify.models.Stage;
-import lombok.Getter;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+
+import codes.kooper.blockify.api.BlockifyAPI;
+import codes.kooper.blockify.events.CreateStageEvent;
+import codes.kooper.blockify.events.DeleteStageEvent;
+import codes.kooper.blockify.models.Stage;
+import lombok.Getter;
+
 @Getter
 public class StageManager {
     private final Map<String, Stage> stages;
+    private final BlockifyAPI api;
 
-    public StageManager() {
+    public StageManager(BlockifyAPI api) {
+        this.api = api;
         this.stages = new HashMap<>();
     }
 
@@ -27,10 +30,10 @@ public class StageManager {
      */
     public void createStage(Stage stage) {
         if (stages.containsKey(stage.getName())) {
-            Blockify.getInstance().getLogger().warning("Stage with name " + stage.getName() + " already exists!");
+            api.getOwnerPlugin().getLogger().warning("Stage with name " + stage.getName() + " already exists!");
             return;
         }
-        Bukkit.getScheduler().runTask(Blockify.getInstance(), () -> new CreateStageEvent(stage).callEvent());
+        Bukkit.getScheduler().runTask(api.getOwnerPlugin(), () -> new CreateStageEvent(stage).callEvent());
         stages.put(stage.getName(), stage);
     }
 

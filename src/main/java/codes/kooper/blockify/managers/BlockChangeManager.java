@@ -1,12 +1,30 @@
 package codes.kooper.blockify.managers;
 
-import codes.kooper.blockify.Blockify;
-import codes.kooper.blockify.events.OnBlockChangeSendEvent;
-import codes.kooper.blockify.models.Audience;
-import codes.kooper.blockify.models.Stage;
-import codes.kooper.blockify.models.View;
-import codes.kooper.blockify.types.BlockifyChunk;
-import codes.kooper.blockify.types.BlockifyPosition;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
+import org.bukkit.ChunkSnapshot;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitTask;
+
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
@@ -16,22 +34,21 @@ import com.github.retrooper.packetevents.protocol.world.chunk.impl.v_1_18.Chunk_
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChunkData;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerUnloadChunk;
+
+import codes.kooper.blockify.api.BlockifyAPI;
+import codes.kooper.blockify.events.OnBlockChangeSendEvent;
+import codes.kooper.blockify.models.Audience;
+import codes.kooper.blockify.models.Stage;
+import codes.kooper.blockify.models.View;
+import codes.kooper.blockify.types.BlockifyChunk;
+import codes.kooper.blockify.types.BlockifyPosition;
 import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import io.papermc.paper.math.Position;
 import lombok.Getter;
-import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
-import org.bukkit.ChunkSnapshot;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitTask;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Getter
 public class BlockChangeManager {
+    private final BlockifyAPI api;
     private final ConcurrentHashMap<UUID, BukkitTask> blockChangeTasks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<BlockData, Integer> blockDataToId = new ConcurrentHashMap<>();
     private final ExecutorService executorService = Executors.newCachedThreadPool();
@@ -43,6 +60,10 @@ public class BlockChangeManager {
     // Track which blocks came from which view for each player:
     // PlayerUUID -> (ViewName -> (Chunk -> Positions))
     private final Map<UUID, Map<String, Map<BlockifyChunk, Set<BlockifyPosition>>>> playerViewBlocks = new ConcurrentHashMap<>();
+
+    public BlockChangeManager(BlockifyAPI api) {
+        this.api = api;
+    }
 
     public void initializePlayer(Player player) {
         playerBlockChanges.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentHashMap<>());
@@ -187,12 +208,12 @@ public class BlockChangeManager {
             if (!player.isOnline() || player.getWorld() != stage.getWorld()) continue;
 
             Map<BlockifyChunk, Map<BlockifyPosition, BlockData>> blockChanges = getBlockChangesForPlayer(player, chunks);
-            Bukkit.getScheduler().runTask(Blockify.getInstance(), () -> new OnBlockChangeSendEvent(stage, blockChanges).callEvent());
+            Bukkit.getScheduler().runTask(api.getOwnerPlugin(), () -> new OnBlockChangeSendEvent(stage, blockChanges).callEvent());
 
             AtomicInteger chunkIndex = new AtomicInteger(0);
             List<BlockifyChunk> chunkList = new ArrayList<>(chunks);
 
-            BukkitTask task = Bukkit.getScheduler().runTaskTimer(Blockify.getInstance(), () -> {
+            BukkitTask task = Bukkit.getScheduler().runTaskTimer(api.getOwnerPlugin(), () -> {
                 if (chunkIndex.get() >= chunkList.size()) {
                     cancelTask(player.getUniqueId());
                     return;
