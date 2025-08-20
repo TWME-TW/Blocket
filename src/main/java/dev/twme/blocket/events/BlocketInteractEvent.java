@@ -1,9 +1,5 @@
 package dev.twme.blocket.events;
 
-import dev.twme.blocket.models.Stage;
-import dev.twme.blocket.models.View;
-import dev.twme.blocket.types.BlocketPosition;
-import lombok.Getter;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
@@ -11,6 +7,23 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
+import dev.twme.blocket.models.Stage;
+import dev.twme.blocket.models.View;
+import dev.twme.blocket.types.BlocketPosition;
+import lombok.Getter;
+
+/**
+ * Event fired when a player interacts with a virtual block in a Blocket stage.
+ * This event is triggered before block breaking logic is applied, allowing
+ * for custom interaction handling and cancellation.
+ * 
+ * <p>This event is cancellable. If cancelled, the interaction will be stopped
+ * and no further block breaking logic will be processed.</p>
+ * 
+ * @author TWME-TW
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 @Getter
 public class BlocketInteractEvent extends Event implements Cancellable {
     private static final HandlerList HANDLERS = new HandlerList();

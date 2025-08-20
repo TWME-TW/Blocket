@@ -1,15 +1,39 @@
 package dev.twme.blocket.utils;
 
-import dev.twme.blocket.types.BlocketPosition;
-import org.bukkit.Location;
-import org.bukkit.block.data.Ageable;
-import org.bukkit.block.data.BlockData;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.bukkit.Location;
+import org.bukkit.block.data.Ageable;
+import org.bukkit.block.data.BlockData;
+
+import dev.twme.blocket.types.BlocketPosition;
+
+/**
+ * Utility class providing helper methods for block operations and calculations.
+ * This class contains static methods for common block-related operations
+ * such as region calculations, location conversions, and block data manipulation.
+ * 
+ * <p>The BlockUtils class provides:
+ * <ul>
+ *   <li>3D region block enumeration between two points</li>
+ *   <li>Location list generation for cubic areas</li>
+ *   <li>Block age manipulation for crops and similar blocks</li>
+ *   <li>Efficient block position calculations</li>
+ * </ul>
+ * </p>
+ * 
+ * <p>Performance consideration: The block enumeration methods can generate
+ * large amounts of data for big regions. It is recommended to call these
+ * methods asynchronously when dealing with large areas to avoid blocking
+ * the main server thread.</p>
+ * 
+ * @author TWME-TW
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 public class BlockUtils {
 
     /**

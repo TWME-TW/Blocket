@@ -1,13 +1,26 @@
 package dev.twme.blocket.events;
 
-import dev.twme.blocket.models.Stage;
-import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
+import dev.twme.blocket.models.Stage;
+import lombok.Getter;
+
+/**
+ * Event fired when a player physically enters a stage's boundaries.
+ * This event is triggered by the StageBoundListener when it detects
+ * that a player has moved into a stage area.
+ * 
+ * <p>This event is cancellable. If cancelled, the player's movement
+ * that would cause them to enter the stage will be blocked.</p>
+ * 
+ * @author TWME-TW
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 @Getter
 public class PlayerEnterStageEvent extends Event implements Cancellable {
     private boolean cancelled = false;

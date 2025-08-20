@@ -24,6 +24,29 @@ import dev.twme.blocket.events.PlayerJoinStageEvent;
 import dev.twme.blocket.events.PlayerLeaveStageEvent;
 import dev.twme.blocket.models.Stage;
 
+/**
+ * Listener that handles player movement events and stage boundary detection.
+ * This listener tracks when players enter or exit stage boundaries and fires
+ * appropriate events for other systems to handle.
+ * 
+ * <p>The listener uses a caching mechanism to efficiently track which stages
+ * each player belongs to, reducing database/manager queries. It processes
+ * player movement events and determines stage entry/exit based on location
+ * changes.</p>
+ * 
+ * <p>Key features:
+ * <ul>
+ *   <li>Cached stage membership for performance</li>
+ *   <li>Movement-based stage boundary detection</li>
+ *   <li>Enter/exit event triggering</li>
+ *   <li>Distance-based optimization to reduce processing</li>
+ * </ul>
+ * </p>
+ * 
+ * @author TWME-TW
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 public class StageBoundListener implements Listener {
 
     private final LoadingCache<UUID, List<Stage>> stageCache = CacheBuilder.newBuilder()
@@ -39,6 +62,23 @@ public class StageBoundListener implements Listener {
                 }
             });
 
+    /**
+     * Handles player movement events to detect stage boundary crossings.
+     * Only processes movement if the player has moved a significant distance (0.5 blocks)
+     * to avoid excessive processing on minor position updates.
+     * 
+     * <p>This method:
+     * <ul>
+     *   <li>Checks if movement distance is significant enough to process</li>
+     *   <li>Retrieves cached stage membership for the player</li>
+     *   <li>Fires PlayerEnterStageEvent when entering a stage</li>
+     *   <li>Fires PlayerExitStageEvent when leaving a stage</li>
+     *   <li>Cancels movement if any event is cancelled</li>
+     * </ul>
+     * </p>
+     * 
+     * @param event The PlayerMoveEvent containing movement information
+     */
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();

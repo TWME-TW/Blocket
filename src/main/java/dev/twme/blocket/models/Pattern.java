@@ -1,12 +1,47 @@
 package dev.twme.blocket.models;
 
-import lombok.Getter;
-import lombok.Setter;
-import org.bukkit.block.data.BlockData;
-
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.bukkit.block.data.BlockData;
+
+import lombok.Getter;
+import lombok.Setter;
+
+/**
+ * Represents a weighted pattern for generating random blocks based on probability distributions.
+ * This class uses the Alias method (Vose's algorithm) for efficient O(1) random sampling
+ * from weighted distributions, making it suitable for high-performance block generation.
+ * 
+ * <p>The Pattern class supports:
+ * <ul>
+ *   <li>Weighted block distribution with arbitrary probability values</li>
+ *   <li>Efficient O(1) random block selection using alias tables</li>
+ *   <li>Automatic normalization of input weights</li>
+ *   <li>Thread-safe random generation</li>
+ *   <li>Equality comparison based on block distributions</li>
+ * </ul>
+ * </p>
+ * 
+ * <p>Example usage:</p>
+ * <pre>{@code
+ * Map<BlockData, Double> blocks = new HashMap<>();
+ * blocks.put(Material.STONE.createBlockData(), 70.0);
+ * blocks.put(Material.COAL_ORE.createBlockData(), 20.0);
+ * blocks.put(Material.IRON_ORE.createBlockData(), 10.0);
+ * 
+ * Pattern pattern = new Pattern(blocks);
+ * BlockData randomBlock = pattern.getRandomBlockData();
+ * }</pre>
+ * 
+ * @author TWME-TW
+ * @version 1.0.0  
+ * @since 1.0.0
+ */
 @Getter
 @Setter
 public class Pattern {

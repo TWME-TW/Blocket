@@ -1,11 +1,25 @@
 package dev.twme.blocket.events;
 
-import dev.twme.blocket.models.Stage;
-import lombok.Getter;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
+import dev.twme.blocket.models.Stage;
+import lombok.Getter;
+
+/**
+ * Event fired when a stage is being deleted from the system.
+ * This event is triggered before a stage is removed from the
+ * StageManager and its resources are cleaned up.
+ * 
+ * <p>This event is not cancellable as it represents notification
+ * of a deletion operation. Use this event to perform cleanup
+ * operations or logging when stages are deleted.</p>
+ * 
+ * @author TWME-TW
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 @Getter
 public class DeleteStageEvent extends Event {
 

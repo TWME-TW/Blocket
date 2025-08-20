@@ -18,8 +18,36 @@ import dev.twme.blocket.models.Stage;
 import dev.twme.blocket.models.View;
 import dev.twme.blocket.types.BlocketPosition;
 
+/**
+ * Packet adapter that handles block placement interactions for virtual blocks.
+ * This adapter intercepts both incoming block placement packets from clients
+ * and outgoing block change packets to clients to maintain virtual block consistency.
+ * 
+ * <p>The adapter handles:
+ * <ul>
+ *   <li>Block placement event triggering for virtual blocks</li>
+ *   <li>Placement cancellation for protected virtual blocks</li>
+ *   <li>Outgoing block change packet filtering to prevent conflicts</li>
+ *   <li>Multi-stage and multi-view block conflict resolution</li>
+ * </ul>
+ * </p>
+ * 
+ * <p>This adapter works in conjunction with BlockDigAdapter to provide
+ * complete virtual block interaction management.</p>
+ * 
+ * @author TWME-TW
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 public class BlockPlaceAdapter extends SimplePacketListenerAbstract {
 
+    /**
+     * Handles incoming player block placement packets.
+     * Checks if the placement target is a virtual block and fires appropriate events.
+     * Cancels placement if the target position contains a virtual block.
+     * 
+     * @param event The packet event containing block placement information
+     */
     @Override
     public void onPacketPlayReceive(PacketPlayReceiveEvent event) {
         if (event.getPacketType() == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
@@ -50,6 +78,13 @@ public class BlockPlaceAdapter extends SimplePacketListenerAbstract {
         }
     }
 
+    /**
+     * Handles outgoing server block change packets.
+     * Prevents the server from sending block change packets that would conflict
+     * with virtual blocks, maintaining the consistency of the virtual block display.
+     * 
+     * @param event The packet event containing block change information
+     */
     @Override
     public void onPacketPlaySend(PacketPlaySendEvent event) {
         if (event.getPacketType() == PacketType.Play.Server.BLOCK_CHANGE) {

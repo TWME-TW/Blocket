@@ -13,6 +13,19 @@ import dev.twme.blocket.types.BlocketPosition;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * Represents a bounded stage area that contains multiple views and manages an audience of players.
+ * A stage defines a 3D region in a world where virtual blocks can be displayed to players.
+ * It manages multiple views (layers) and handles audience permissions and chunk processing.
+ * 
+ * <p>Stages are the main container for organizing virtual blocks. They define boundaries,
+ * manage views with different z-indexes, and control how block changes are sent to players.
+ * Each stage has its own audience that determines which players can see the virtual blocks.</p>
+ * 
+ * @author TWME-TW  
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 @Getter
 @Setter
 public class Stage {
@@ -23,6 +36,16 @@ public class Stage {
     private int chunksPerTick;
     private final Audience audience;
 
+    /**
+     * Creates a new stage with the specified parameters.
+     * The stage boundaries are automatically calculated from the two positions.
+     * 
+     * @param name The unique name for this stage
+     * @param world The world this stage exists in
+     * @param pos1 The first corner position of the stage boundary
+     * @param pos2 The second corner position of the stage boundary  
+     * @param audience The audience that can see blocks in this stage
+     */
     public Stage(String name, World world, BlocketPosition pos1, BlocketPosition pos2, Audience audience) {
         this.name = name;
         this.world = world;
@@ -33,6 +56,12 @@ public class Stage {
         this.chunksPerTick = 1;
     }
 
+    /**
+     * Checks if the specified location is within this stage's boundaries.
+     * 
+     * @param location The location to check
+     * @return true if the location is within the stage boundaries, false otherwise
+     */
     public boolean isLocationWithin(Location location) {
         return location.getWorld().equals(world)
                 && location.getBlockX() >= minPosition.getX() && location.getBlockX() <= maxPosition.getX()
@@ -51,6 +80,8 @@ public class Stage {
     /**
      * Refreshes a specific set of blocks to the audience.
      * Use this after making incremental block-level changes.
+     * 
+     * @param blocks The set of block positions to refresh
      */
     public void refreshBlocksToAudience(Set<BlocketPosition> blocks) {
         for (Player player : audience.getOnlinePlayers()) {
@@ -58,6 +89,12 @@ public class Stage {
         }
     }
 
+    /**
+     * Adds a view to this stage if no view with the same name already exists.
+     * Logs a warning if a view with the same name is already present.
+     * 
+     * @param view The view to add to this stage
+     */
     public void addView(View view) {
         if (views.stream().anyMatch(v -> v.getName().equalsIgnoreCase(view.getName()))) {
             BlocketAPI.getInstance().getOwnerPlugin().getLogger().warning("View with name " + view.getName() + " already exists in stage " + name + "!");
@@ -66,10 +103,21 @@ public class Stage {
         views.add(view);
     }
 
+    /**
+     * Removes a view from this stage.
+     * 
+     * @param view The view to remove from this stage
+     */
     public void removeView(View view) {
         views.remove(view);
     }
 
+    /**
+     * Gets a view by its name (case-insensitive).
+     * 
+     * @param viewName The name of the view to retrieve
+     * @return The view with the specified name, or null if not found
+     */
     public View getView(String viewName) {
         for (View view : views) {
             if (view.getName().equalsIgnoreCase(viewName)) {
@@ -79,6 +127,11 @@ public class Stage {
         return null;
     }
 
+    /**
+     * Gets all chunks that intersect with this stage's boundaries.
+     * 
+     * @return A set of all BlocketChunk objects within the stage boundaries
+     */
     public Set<BlocketChunk> getChunks() {
         Set<BlocketChunk> chunks = new HashSet<>();
         for (int x = minPosition.getX() >> 4; x <= maxPosition.getX() >> 4; x++) {
@@ -94,6 +147,9 @@ public class Stage {
      * - Stage: getView(...)
      * - View: getBlocks() (already present in View)
      * - BlockChangeManager: addViewToPlayer(player, view)
+     * 
+     * @param player The player to add the view for
+     * @param view The view to add
      */
     public void addViewForPlayer(Player player, View view) {
         // This method uses BlockChangeManager's addViewToPlayer to merge the view's blocks into player's cache
@@ -104,6 +160,9 @@ public class Stage {
 
     /**
      * Add a view to a player by name.
+     * 
+     * @param player The player to add the view for
+     * @param viewName The name of the view to add
      */
     public void addViewForPlayer(Player player, String viewName) {
         View view = getView(viewName);
@@ -118,6 +177,9 @@ public class Stage {
      * Remove a given view from a player. Uses existing methods:
      * - View: getBlocks()
      * - BlockChangeManager: removeViewFromPlayer(player, view)
+     * 
+     * @param player The player to remove the view from
+     * @param view The view to remove
      */
     public void removeViewForPlayer(Player player, View view) {
         // Remove view's blocks from player's cache
@@ -128,6 +190,9 @@ public class Stage {
 
     /**
      * Remove a view from a player by name.
+     * 
+     * @param player The player to remove the view from
+     * @param viewName The name of the view to remove
      */
     public void removeViewForPlayer(Player player, String viewName) {
         View view = getView(viewName);

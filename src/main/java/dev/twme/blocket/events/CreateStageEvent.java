@@ -1,11 +1,25 @@
 package dev.twme.blocket.events;
 
-import dev.twme.blocket.models.Stage;
-import lombok.Getter;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
+import dev.twme.blocket.models.Stage;
+import lombok.Getter;
+
+/**
+ * Event fired when a new stage is created in the system.
+ * This event is triggered after a stage is successfully created
+ * and registered in the StageManager.
+ * 
+ * <p>This event is not cancellable as it represents notification
+ * of a completed creation operation. Use this event to perform
+ * additional setup or logging when stages are created.</p>
+ * 
+ * @author TWME-TW
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 @Getter
 public class CreateStageEvent extends Event {
     private static final HandlerList HANDLERS = new HandlerList();

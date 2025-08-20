@@ -46,6 +46,29 @@ import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import io.papermc.paper.math.Position;
 import lombok.Getter;
 
+/**
+ * Manages block changes and caching for virtual blocks across different players and views.
+ * This manager handles the complex task of tracking which blocks each player should see,
+ * managing view-specific block caches, and sending appropriate packet updates to clients.
+ * 
+ * <p>The BlockChangeManager maintains per-player block caches that combine blocks from
+ * multiple views, handles incremental updates when views are added/removed, and optimizes
+ * packet sending through chunk-based processing and asynchronous operations.</p>
+ * 
+ * <p>Key features include:
+ * <ul>
+ *   <li>Per-player block change caching</li>
+ *   <li>View-aware block management</li>  
+ *   <li>Asynchronous chunk packet processing</li>
+ *   <li>Efficient memory management</li>
+ *   <li>Incremental block updates</li>
+ * </ul>
+ * </p>
+ * 
+ * @author TWME-TW
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 @Getter
 public class BlockChangeManager {
     private final BlocketAPI api;
@@ -61,15 +84,33 @@ public class BlockChangeManager {
     // PlayerUUID -> (ViewName -> (Chunk -> Positions))
     private final Map<UUID, Map<String, Map<BlocketChunk, Set<BlocketPosition>>>> playerViewBlocks = new ConcurrentHashMap<>();
 
+    /**
+     * Creates a new BlockChangeManager with the specified BlocketAPI instance.
+     * Initializes thread pools and data structures for managing block changes.
+     * 
+     * @param api The BlocketAPI instance this manager belongs to
+     */
     public BlockChangeManager(BlocketAPI api) {
         this.api = api;
     }
 
+    /**
+     * Initializes block change tracking for a new player.
+     * Creates empty data structures for the player's block changes and view tracking.
+     * 
+     * @param player The player to initialize tracking for
+     */
     public void initializePlayer(Player player) {
         playerBlockChanges.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentHashMap<>());
         playerViewBlocks.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentHashMap<>());
     }
 
+    /**
+     * Removes all tracking data for a player when they disconnect or leave a stage.
+     * Cleans up memory by removing the player's block change cache and view tracking.
+     * 
+     * @param player The player to remove tracking for
+     */
     public void removePlayer(Player player) {
         playerBlockChanges.remove(player.getUniqueId());
         playerViewBlocks.remove(player.getUniqueId());

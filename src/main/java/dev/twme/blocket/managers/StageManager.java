@@ -14,6 +14,29 @@ import dev.twme.blocket.events.DeleteStageEvent;
 import dev.twme.blocket.models.Stage;
 import lombok.Getter;
 
+/**
+ * Central manager for all stage operations in the Blocket system.
+ * This manager handles stage creation, deletion, retrieval, and maintains
+ * the registry of all active stages in the system.
+ * 
+ * <p>The StageManager provides:
+ * <ul>
+ *   <li>Stage lifecycle management (create, delete, retrieve)</li>
+ *   <li>Name-based stage registry for fast lookups</li>
+ *   <li>Event firing for stage creation and deletion</li>
+ *   <li>Player-based stage queries</li>
+ *   <li>Duplicate name prevention</li>
+ * </ul>
+ * </p>
+ * 
+ * <p>All stage operations are performed synchronously and thread-safely.
+ * The manager automatically fires appropriate events when stages are
+ * created or deleted, allowing other systems to respond to stage changes.</p>
+ * 
+ * @author TWME-TW
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 @Getter
 public class StageManager {
     private final Map<String, Stage> stages;

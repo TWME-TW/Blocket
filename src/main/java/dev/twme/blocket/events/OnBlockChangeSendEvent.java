@@ -1,16 +1,30 @@
 package dev.twme.blocket.events;
 
-import dev.twme.blocket.models.Stage;
-import dev.twme.blocket.types.BlocketChunk;
-import dev.twme.blocket.types.BlocketPosition;
-import lombok.Getter;
+import java.util.Map;
+
 import org.bukkit.block.data.BlockData;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Map;
+import dev.twme.blocket.models.Stage;
+import dev.twme.blocket.types.BlocketChunk;
+import dev.twme.blocket.types.BlocketPosition;
+import lombok.Getter;
 
+/**
+ * Event fired when block changes are being sent to players in a stage.
+ * This event provides information about which blocks are being updated
+ * and allows listeners to monitor block change activity.
+ * 
+ * <p>This event is fired before block change packets are sent to players,
+ * allowing for logging, monitoring, or additional processing of block updates.
+ * It is not cancellable as it represents information about outgoing packets.</p>
+ * 
+ * @author TWME-TW
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 @Getter
 public class OnBlockChangeSendEvent extends Event {
 

@@ -1,12 +1,26 @@
 package dev.twme.blocket.events;
 
-import dev.twme.blocket.models.Stage;
-import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
+import dev.twme.blocket.models.Stage;
+import lombok.Getter;
+
+/**
+ * Event fired when a player programmatically joins a stage's audience.
+ * This event is different from PlayerEnterStageEvent as it represents
+ * logical membership addition rather than physical boundary crossing.
+ * 
+ * <p>This event is typically fired when a player is added to a stage's
+ * audience through API calls or admin commands. It is not cancellable
+ * as it represents an administrative action.</p>
+ * 
+ * @author TWME-TW
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 @Getter
 public class PlayerJoinStageEvent extends Event {
 

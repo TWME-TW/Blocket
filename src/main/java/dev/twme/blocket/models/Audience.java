@@ -15,6 +15,29 @@ import dev.twme.blocket.api.BlocketAPI;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * Represents a collection of players that can view virtual blocks in stages.
+ * An audience manages player membership, visibility settings, and individual
+ * player mining speeds for enhanced block breaking experiences.
+ * 
+ * <p>The Audience class provides functionality for:
+ * <ul>
+ *   <li>Managing player membership with UUID-based tracking</li>
+ *   <li>Controlling player visibility (hiding players from each other)</li>
+ *   <li>Setting individual mining speeds for players</li>
+ *   <li>Converting between Player objects and UUIDs</li>
+ *   <li>Filtering online players from the audience</li>
+ * </ul>
+ * </p>
+ * 
+ * <p>Mining speeds allow for customized block breaking experiences where
+ * different players can have different breaking speeds, enhancing gameplay
+ * mechanics like mining boosts or penalties.</p>
+ * 
+ * @author TWME-TW
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 @Setter
 @Getter
 public class Audience {

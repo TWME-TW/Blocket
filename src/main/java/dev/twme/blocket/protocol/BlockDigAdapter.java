@@ -23,8 +23,34 @@ import dev.twme.blocket.events.BlocketInteractEvent;
 import dev.twme.blocket.models.Stage;
 import dev.twme.blocket.types.BlocketPosition;
 
+/**
+ * Packet adapter that handles block digging interactions for virtual blocks.
+ * This adapter intercepts player block digging packets and processes them
+ * for blocks that exist in Blocket stages and views.
+ * 
+ * <p>The adapter handles:
+ * <ul>
+ *   <li>Block interaction events (left-click, start digging)</li>
+ *   <li>Block breaking logic with breakability checks</li>
+ *   <li>Instant break calculations based on tool efficiency and haste effects</li>
+ *   <li>Creative mode handling</li>
+ *   <li>Event cancellation for non-breakable blocks</li>
+ * </ul>
+ * </p>
+ * 
+ * @author TWME-TW
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 public class BlockDigAdapter extends SimplePacketListenerAbstract {
 
+    /**
+     * Handles incoming player digging packets and processes them for virtual blocks.
+     * This method intercepts PLAYER_DIGGING packets and checks if the target block
+     * exists in any of the player's active stages.
+     * 
+     * @param event The packet event containing player digging information
+     */
     @Override
     public void onPacketPlayReceive(PacketPlayReceiveEvent event) {
         if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
@@ -85,11 +111,20 @@ public class BlockDigAdapter extends SimplePacketListenerAbstract {
     }
 
     /**
-     * Check if player can instantly break block
+     * Check if player can instantly break block based on tool efficiency, haste effects, and game mode.
+     * 
+     * <p>Instant break calculation considers:
+     * <ul>
+     *   <li>Creative mode (always instant)</li>
+     *   <li>Tool efficiency and material compatibility</li>
+     *   <li>Haste potion effects (20% speed boost per level)</li>
+     *   <li>Block hardness vs break speed ratio (30x threshold)</li>
+     * </ul>
+     * </p>
      *
      * @param player    Player who is digging
-     * @param blockData BlockData of the block
-     * @return boolean
+     * @param blockData BlockData of the block being broken
+     * @return true if the block can be instantly broken, false otherwise
      */
     private boolean canInstantBreak(Player player, BlockData blockData) {
         ItemStack tool = player.getInventory().getItemInMainHand();
