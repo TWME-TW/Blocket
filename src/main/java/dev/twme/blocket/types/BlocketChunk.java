@@ -7,7 +7,7 @@ import org.bukkit.Chunk;
  * @param x The x coordinate of the chunk.
  * @param z The z coordinate of the chunk.
  */
-public record BlockifyChunk(int x, int z) {
+public record BlocketChunk(int x, int z) {
 
     /**
      * Stringifies the chunk data.
@@ -16,7 +16,7 @@ public record BlockifyChunk(int x, int z) {
      */
     @Override
     public String toString() {
-        return "BlockifyChunk{x=" + x + ", z=" + z + "}";
+        return "BlocketChunk{x=" + x + ", z=" + z + "}";
     }
 
     /**
@@ -47,7 +47,7 @@ public record BlockifyChunk(int x, int z) {
     @Override
     public boolean equals(Object o) {
         if (o == this) return true;
-        if (!(o instanceof BlockifyChunk(int x1, int z1))) return false;
+        if (!(o instanceof BlocketChunk(int x1, int z1))) return false;
         return this.x == x1 && this.z == z1;
     }
 }

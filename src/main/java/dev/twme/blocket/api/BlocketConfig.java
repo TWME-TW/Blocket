@@ -4,11 +4,11 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * Configuration class for BlockifyAPI initialization
+ * Configuration class for BlocketAPI initialization
  */
 @Getter
 @Setter
-public class BlockifyConfig {
+public class BlocketConfig {
     private boolean autoInitialize = true;
     private boolean enableStageBoundListener = true;
     private boolean enablePacketListeners = true;
@@ -17,15 +17,15 @@ public class BlockifyConfig {
     /**
      * Private constructor - use builder methods
      */
-    private BlockifyConfig() {}
+    private BlocketConfig() {}
     
     /**
      * Create default configuration
      * 
      * @return Default configuration
      */
-    public static BlockifyConfig defaultConfig() {
-        return new BlockifyConfig();
+    public static BlocketConfig defaultConfig() {
+        return new BlocketConfig();
     }
     
     /**
@@ -33,8 +33,8 @@ public class BlockifyConfig {
      * 
      * @return Configuration builder
      */
-    public static BlockifyConfig builder() {
-        return new BlockifyConfig();
+    public static BlocketConfig builder() {
+        return new BlocketConfig();
     }
     
     /**
@@ -43,7 +43,7 @@ public class BlockifyConfig {
      * @param enable true to enable auto initialization
      * @return this configuration for chaining
      */
-    public BlockifyConfig autoInitialize(boolean enable) {
+    public BlocketConfig autoInitialize(boolean enable) {
         this.autoInitialize = enable;
         return this;
     }
@@ -55,7 +55,7 @@ public class BlockifyConfig {
      * @param enable true to enable
      * @return this configuration for chaining
      */
-    public BlockifyConfig enableStageBoundListener(boolean enable) {
+    public BlocketConfig enableStageBoundListener(boolean enable) {
         this.enableStageBoundListener = enable;
         return this;
     }
@@ -67,7 +67,7 @@ public class BlockifyConfig {
      * @param enable true to enable
      * @return this configuration for chaining
      */
-    public BlockifyConfig enablePacketListeners(boolean enable) {
+    public BlocketConfig enablePacketListeners(boolean enable) {
         this.enablePacketListeners = enable;
         return this;
     }
@@ -78,7 +78,7 @@ public class BlockifyConfig {
      * @param chunksPerTick number of chunks to process per tick
      * @return this configuration for chaining
      */
-    public BlockifyConfig defaultChunksPerTick(int chunksPerTick) {
+    public BlocketConfig defaultChunksPerTick(int chunksPerTick) {
         if (chunksPerTick <= 0) {
             throw new IllegalArgumentException("Chunks per tick must be positive");
         }
@@ -91,7 +91,7 @@ public class BlockifyConfig {
      * 
      * @return this configuration
      */
-    public BlockifyConfig build() {
+    public BlocketConfig build() {
         return this;
     }
 }

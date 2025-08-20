@@ -4,12 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>codes.kooper</groupId>
-    <artifactId>blockify-api</artifactId>
+    <groupId>dev.twme</groupId>
+    <artifactId>blocket-api</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>Blockify API</name>
+    <name>Blocket API</name>
     <description>A powerful library for creating client-side virtual blocks in Minecraft</description>
 
     <properties>

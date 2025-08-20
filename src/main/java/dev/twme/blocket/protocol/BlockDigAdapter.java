@@ -17,11 +17,11 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.DiggingAction;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
 
-import dev.twme.blocket.api.BlockifyAPI;
-import dev.twme.blocket.events.BlockifyBreakEvent;
-import dev.twme.blocket.events.BlockifyInteractEvent;
+import dev.twme.blocket.api.BlocketAPI;
+import dev.twme.blocket.events.BlocketBreakEvent;
+import dev.twme.blocket.events.BlocketInteractEvent;
 import dev.twme.blocket.models.Stage;
-import dev.twme.blocket.types.BlockifyPosition;
+import dev.twme.blocket.types.BlocketPosition;
 
 public class BlockDigAdapter extends SimplePacketListenerAbstract {
 
@@ -36,12 +36,12 @@ public class BlockDigAdapter extends SimplePacketListenerAbstract {
             Player player = event.getPlayer();
 
             // Get stages the player is in. If the player is not in any stages, return.
-            List<Stage> stages = BlockifyAPI.getInstance().getStageManager().getStages(player);
+            List<Stage> stages = BlocketAPI.getInstance().getStageManager().getStages(player);
             if (stages == null || stages.isEmpty()) {
                 return;
             }
 
-            BlockifyPosition position = new BlockifyPosition(wrapper.getBlockPosition().getX(), wrapper.getBlockPosition().getY(), wrapper.getBlockPosition().getZ());
+            BlocketPosition position = new BlocketPosition(wrapper.getBlockPosition().getX(), wrapper.getBlockPosition().getY(), wrapper.getBlockPosition().getZ());
 
             // Find the block in any stage and view using streams
             stages.stream()
@@ -52,8 +52,8 @@ public class BlockDigAdapter extends SimplePacketListenerAbstract {
                         // Get block data from view
                         BlockData blockData = view.getBlock(position);
 
-                        // Call BlockifyInteractEvent to handle custom interaction
-                        Bukkit.getScheduler().runTask(BlockifyAPI.getInstance().getOwnerPlugin(), () -> new BlockifyInteractEvent(player, position, blockData, view, view.getStage()).callEvent());
+                        // Call BlocketInteractEvent to handle custom interaction
+                        Bukkit.getScheduler().runTask(BlocketAPI.getInstance().getOwnerPlugin(), () -> new BlocketInteractEvent(player, position, blockData, view, view.getStage()).callEvent());
 
                         // Check if block is breakable, if not, send block change packet to cancel the break
                         if (!view.isBreakable()) {
@@ -63,8 +63,8 @@ public class BlockDigAdapter extends SimplePacketListenerAbstract {
 
                         // Block break functionality
                         if (actionType == DiggingAction.FINISHED_DIGGING || canInstantBreak(player, blockData)) {
-                            BlockifyBreakEvent blockifyBreakEvent = new BlockifyBreakEvent(player, position, blockData, view, view.getStage());
-                            blockifyBreakEvent.callEvent();
+                            BlocketBreakEvent BlocketBreakEvent = new BlocketBreakEvent(player, position, blockData, view, view.getStage());
+                            BlocketBreakEvent.callEvent();
 
                             // Set to air
                             view.setBlock(position, Material.AIR.createBlockData());
@@ -73,7 +73,7 @@ public class BlockDigAdapter extends SimplePacketListenerAbstract {
                             }
 
                             // If block is not cancelled, break the block, otherwise, revert the block
-                            if (blockifyBreakEvent.isCancelled()) {
+                            if (BlocketBreakEvent.isCancelled()) {
                                 for (Player audienceMember : view.getStage().getAudience().getOnlinePlayers()) {
                                     audienceMember.sendBlockChange(position.toLocation(player.getWorld()), blockData);
                                 }

@@ -35,33 +35,33 @@ import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChunkData;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerUnloadChunk;
 
-import dev.twme.blocket.api.BlockifyAPI;
+import dev.twme.blocket.api.BlocketAPI;
 import dev.twme.blocket.events.OnBlockChangeSendEvent;
 import dev.twme.blocket.models.Audience;
 import dev.twme.blocket.models.Stage;
 import dev.twme.blocket.models.View;
-import dev.twme.blocket.types.BlockifyChunk;
-import dev.twme.blocket.types.BlockifyPosition;
+import dev.twme.blocket.types.BlocketChunk;
+import dev.twme.blocket.types.BlocketPosition;
 import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import io.papermc.paper.math.Position;
 import lombok.Getter;
 
 @Getter
 public class BlockChangeManager {
-    private final BlockifyAPI api;
+    private final BlocketAPI api;
     private final ConcurrentHashMap<UUID, BukkitTask> blockChangeTasks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<BlockData, Integer> blockDataToId = new ConcurrentHashMap<>();
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
-    // Per-player block changes: PlayerUUID -> (BlockifyChunk -> (BlockifyPosition -> BlockData))
+    // Per-player block changes: PlayerUUID -> (BlocketChunk -> (BlocketPosition -> BlockData))
     // This is updated incrementally as views are added/removed or blocks change.
-    private final Map<UUID, Map<BlockifyChunk, Map<BlockifyPosition, BlockData>>> playerBlockChanges = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<BlocketChunk, Map<BlocketPosition, BlockData>>> playerBlockChanges = new ConcurrentHashMap<>();
 
     // Track which blocks came from which view for each player:
     // PlayerUUID -> (ViewName -> (Chunk -> Positions))
-    private final Map<UUID, Map<String, Map<BlockifyChunk, Set<BlockifyPosition>>>> playerViewBlocks = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<String, Map<BlocketChunk, Set<BlocketPosition>>>> playerViewBlocks = new ConcurrentHashMap<>();
 
-    public BlockChangeManager(BlockifyAPI api) {
+    public BlockChangeManager(BlocketAPI api) {
         this.api = api;
     }
 
@@ -88,19 +88,19 @@ public class BlockChangeManager {
      * Add a view's blocks to a player's cache in place.
      */
     public void addViewToPlayer(Player player, View view) {
-        Map<BlockifyChunk, Map<BlockifyPosition, BlockData>> playerCache = playerBlockChanges.get(player.getUniqueId());
-        Map<String, Map<BlockifyChunk, Set<BlockifyPosition>>> viewMap = playerViewBlocks.get(player.getUniqueId());
+        Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerCache = playerBlockChanges.get(player.getUniqueId());
+        Map<String, Map<BlocketChunk, Set<BlocketPosition>>> viewMap = playerViewBlocks.get(player.getUniqueId());
 
         if (playerCache == null || viewMap == null) return;
 
-        Map<BlockifyChunk, Set<BlockifyPosition>> viewBlockPositions = new HashMap<>();
+        Map<BlocketChunk, Set<BlocketPosition>> viewBlockPositions = new HashMap<>();
 
         // Merge view blocks into player cache
-        for (Map.Entry<BlockifyChunk, ConcurrentHashMap<BlockifyPosition, BlockData>> chunkEntry : view.getBlocks().entrySet()) {
-            BlockifyChunk chunk = chunkEntry.getKey();
-            Map<BlockifyPosition, BlockData> chunkMap = playerCache.computeIfAbsent(chunk, c -> new ConcurrentHashMap<>());
+        for (Map.Entry<BlocketChunk, ConcurrentHashMap<BlocketPosition, BlockData>> chunkEntry : view.getBlocks().entrySet()) {
+            BlocketChunk chunk = chunkEntry.getKey();
+            Map<BlocketPosition, BlockData> chunkMap = playerCache.computeIfAbsent(chunk, c -> new ConcurrentHashMap<>());
 
-            for (Map.Entry<BlockifyPosition, BlockData> posEntry : chunkEntry.getValue().entrySet()) {
+            for (Map.Entry<BlocketPosition, BlockData> posEntry : chunkEntry.getValue().entrySet()) {
                 chunkMap.put(posEntry.getKey(), posEntry.getValue());
                 viewBlockPositions.computeIfAbsent(chunk, c -> new HashSet<>()).add(posEntry.getKey());
             }
@@ -113,19 +113,19 @@ public class BlockChangeManager {
      * Remove a view's blocks from a player's cache in place.
      */
     public void removeViewFromPlayer(Player player, View view) {
-        Map<BlockifyChunk, Map<BlockifyPosition, BlockData>> playerCache = playerBlockChanges.get(player.getUniqueId());
-        Map<String, Map<BlockifyChunk, Set<BlockifyPosition>>> viewMap = playerViewBlocks.get(player.getUniqueId());
+        Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerCache = playerBlockChanges.get(player.getUniqueId());
+        Map<String, Map<BlocketChunk, Set<BlocketPosition>>> viewMap = playerViewBlocks.get(player.getUniqueId());
 
         if (playerCache == null || viewMap == null) return;
 
-        Map<BlockifyChunk, Set<BlockifyPosition>> viewBlocks = viewMap.remove(view.getName());
+        Map<BlocketChunk, Set<BlocketPosition>> viewBlocks = viewMap.remove(view.getName());
         if (viewBlocks == null) return;
 
         // Remove only the blocks associated with this view
-        for (Map.Entry<BlockifyChunk, Set<BlockifyPosition>> chunkEntry : viewBlocks.entrySet()) {
-            Map<BlockifyPosition, BlockData> chunkMap = playerCache.get(chunkEntry.getKey());
+        for (Map.Entry<BlocketChunk, Set<BlocketPosition>> chunkEntry : viewBlocks.entrySet()) {
+            Map<BlocketPosition, BlockData> chunkMap = playerCache.get(chunkEntry.getKey());
             if (chunkMap != null) {
-                for (BlockifyPosition pos : chunkEntry.getValue()) {
+                for (BlocketPosition pos : chunkEntry.getValue()) {
                     chunkMap.remove(pos);
                 }
                 if (chunkMap.isEmpty()) {
@@ -138,10 +138,10 @@ public class BlockChangeManager {
     /**
      * Apply a single block change for a player. If data is null, remove block.
      */
-    public void applyBlockChange(Player player, BlockifyChunk chunk, BlockifyPosition pos, BlockData data, String viewName) {
-        Map<BlockifyChunk, Map<BlockifyPosition, BlockData>> playerCache = playerBlockChanges.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentHashMap<>());
-        Map<BlockifyPosition, BlockData> chunkMap = playerCache.computeIfAbsent(chunk, c -> new ConcurrentHashMap<>());
-        Map<String, Map<BlockifyChunk, Set<BlockifyPosition>>> viewMap = playerViewBlocks.computeIfAbsent(player.getUniqueId(), k -> new HashMap<>());
+    public void applyBlockChange(Player player, BlocketChunk chunk, BlocketPosition pos, BlockData data, String viewName) {
+        Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerCache = playerBlockChanges.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentHashMap<>());
+        Map<BlocketPosition, BlockData> chunkMap = playerCache.computeIfAbsent(chunk, c -> new ConcurrentHashMap<>());
+        Map<String, Map<BlocketChunk, Set<BlocketPosition>>> viewMap = playerViewBlocks.computeIfAbsent(player.getUniqueId(), k -> new HashMap<>());
 
         if (data == null) {
             // Remove block
@@ -152,9 +152,9 @@ public class BlockChangeManager {
 
             // Also remove from the associated view if known
             if (viewName != null) {
-                Map<BlockifyChunk, Set<BlockifyPosition>> viewChunks = viewMap.get(viewName);
+                Map<BlocketChunk, Set<BlocketPosition>> viewChunks = viewMap.get(viewName);
                 if (viewChunks != null) {
-                    Set<BlockifyPosition> positions = viewChunks.get(chunk);
+                    Set<BlocketPosition> positions = viewChunks.get(chunk);
                     if (positions != null) {
                         positions.remove(pos);
                         if (positions.isEmpty()) {
@@ -181,17 +181,17 @@ public class BlockChangeManager {
     /**
      * Retrieve block changes for a player filtered by requested chunks.
      */
-    private Map<BlockifyChunk, Map<BlockifyPosition, BlockData>> getBlockChangesForPlayer(Player player, Collection<BlockifyChunk> chunks) {
-        Map<BlockifyChunk, Map<BlockifyPosition, BlockData>> changes = playerBlockChanges.get(player.getUniqueId());
+    private Map<BlocketChunk, Map<BlocketPosition, BlockData>> getBlockChangesForPlayer(Player player, Collection<BlocketChunk> chunks) {
+        Map<BlocketChunk, Map<BlocketPosition, BlockData>> changes = playerBlockChanges.get(player.getUniqueId());
         if (changes == null || changes.isEmpty()) {
             return Collections.emptyMap();
         }
 
         if (chunks.isEmpty()) return Collections.emptyMap();
 
-        Map<BlockifyChunk, Map<BlockifyPosition, BlockData>> result = new HashMap<>();
-        for (BlockifyChunk chunk : chunks) {
-            Map<BlockifyPosition, BlockData> data = changes.get(chunk);
+        Map<BlocketChunk, Map<BlocketPosition, BlockData>> result = new HashMap<>();
+        for (BlocketChunk chunk : chunks) {
+            Map<BlocketPosition, BlockData> data = changes.get(chunk);
             if (data != null && !data.isEmpty()) {
                 result.put(chunk, data);
             }
@@ -199,19 +199,19 @@ public class BlockChangeManager {
         return result;
     }
 
-    public void sendBlockChanges(Stage stage, Audience audience, Collection<BlockifyChunk> chunks) {
+    public void sendBlockChanges(Stage stage, Audience audience, Collection<BlocketChunk> chunks) {
         sendBlockChanges(stage, audience, chunks, false);
     }
 
-    public void sendBlockChanges(Stage stage, Audience audience, Collection<BlockifyChunk> chunks, boolean unload) {
+    public void sendBlockChanges(Stage stage, Audience audience, Collection<BlocketChunk> chunks, boolean unload) {
         for (Player player : audience.getOnlinePlayers()) {
             if (!player.isOnline() || player.getWorld() != stage.getWorld()) continue;
 
-            Map<BlockifyChunk, Map<BlockifyPosition, BlockData>> blockChanges = getBlockChangesForPlayer(player, chunks);
+            Map<BlocketChunk, Map<BlocketPosition, BlockData>> blockChanges = getBlockChangesForPlayer(player, chunks);
             Bukkit.getScheduler().runTask(api.getOwnerPlugin(), () -> new OnBlockChangeSendEvent(stage, blockChanges).callEvent());
 
             AtomicInteger chunkIndex = new AtomicInteger(0);
-            List<BlockifyChunk> chunkList = new ArrayList<>(chunks);
+            List<BlocketChunk> chunkList = new ArrayList<>(chunks);
 
             BukkitTask task = Bukkit.getScheduler().runTaskTimer(api.getOwnerPlugin(), () -> {
                 if (chunkIndex.get() >= chunkList.size()) {
@@ -227,10 +227,10 @@ public class BlockChangeManager {
         }
     }
 
-    public void sendMultiBlockChange(Player player, Set<BlockifyPosition> blocks) {
+    public void sendMultiBlockChange(Player player, Set<BlocketPosition> blocks) {
         final Map<Position, BlockData> blocksToSend = new HashMap<>();
-        for (BlockifyPosition position : blocks) {
-            BlockData blockData = playerBlockChanges.get(player.getUniqueId()).get(position.toBlockifyChunk()).get(position);
+        for (BlocketPosition position : blocks) {
+            BlockData blockData = playerBlockChanges.get(player.getUniqueId()).get(position.toBlocketChunk()).get(position);
             if (blockData == null) continue;
             blocksToSend.put(position.toPosition(), blockData);
         }
@@ -241,15 +241,15 @@ public class BlockChangeManager {
         Optional.ofNullable(blockChangeTasks.remove(playerId)).ifPresent(BukkitTask::cancel);
     }
 
-    public void sendChunkPacket(Player player, BlockifyChunk chunk, boolean unload) {
+    public void sendChunkPacket(Player player, BlocketChunk chunk, boolean unload) {
         executorService.submit(() -> processAndSendChunk(player, chunk, unload));
     }
 
-    private void processAndSendChunk(Player player, BlockifyChunk chunk, boolean unload) {
+    private void processAndSendChunk(Player player, BlocketChunk chunk, boolean unload) {
         try {
             User packetUser = PacketEvents.getAPI().getPlayerManager().getUser(player);
             int ySections = packetUser.getTotalWorldHeight() >> 4;
-            Map<BlockifyPosition, BlockData> blockData = null;
+            Map<BlocketPosition, BlockData> blockData = null;
 
             if (!unload) {
                 blockData = getBlockChangesForPlayer(player, Collections.singleton(chunk)).get(chunk);
@@ -297,7 +297,7 @@ public class BlockChangeManager {
                         if (worldY >= minHeight && worldY < maxHeight) {
                             for (int z = 0; z < 16; z++) {
                                 BlockData data = null;
-                                BlockifyPosition position = new BlockifyPosition(x + (chunk.x() << 4),
+                                BlocketPosition position = new BlocketPosition(x + (chunk.x() << 4),
                                         (section << 4) + y + minHeight, z + (chunk.z() << 4));
 
                                 if (!unload && blockData != null) {

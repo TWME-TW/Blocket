@@ -17,7 +17,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 
-import dev.twme.blocket.api.BlockifyAPI;
+import dev.twme.blocket.api.BlocketAPI;
 import dev.twme.blocket.events.PlayerEnterStageEvent;
 import dev.twme.blocket.events.PlayerExitStageEvent;
 import dev.twme.blocket.events.PlayerJoinStageEvent;
@@ -35,7 +35,7 @@ public class StageBoundListener implements Listener {
                     if (player == null) {
                         return Collections.emptyList();
                     }
-                    return BlockifyAPI.getInstance().getStageManager().getStages(player);
+                    return BlocketAPI.getInstance().getStageManager().getStages(player);
                 }
             });
 

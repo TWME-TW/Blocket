@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 import org.bukkit.entity.Player;
 
-import dev.twme.blocket.api.BlockifyAPI;
+import dev.twme.blocket.api.BlocketAPI;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -102,7 +102,7 @@ public class Audience {
     public Set<Player> getOnlinePlayers() {
         List<Player> onlinePlayers = new ArrayList<>();
         for (UUID player : players) {
-            Player p = BlockifyAPI.getInstance().getOwnerPlugin().getServer().getPlayer(player);
+            Player p = BlocketAPI.getInstance().getOwnerPlugin().getServer().getPlayer(player);
             if (p != null) {
                 onlinePlayers.add(p);
             }
@@ -127,7 +127,7 @@ public class Audience {
      */
     public void setMiningSpeed(UUID player, float speed) {
         if (speed < 0 || speed == 1) {
-            BlockifyAPI.getInstance().getOwnerPlugin().getLogger().warning("Invalid mining speed for player " + player + ": " + speed);
+            BlocketAPI.getInstance().getOwnerPlugin().getLogger().warning("Invalid mining speed for player " + player + ": " + speed);
             return;
         }
         miningSpeeds.put(player, speed);

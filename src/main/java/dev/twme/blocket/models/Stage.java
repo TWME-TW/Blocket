@@ -7,9 +7,9 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-import dev.twme.blocket.api.BlockifyAPI;
-import dev.twme.blocket.types.BlockifyChunk;
-import dev.twme.blocket.types.BlockifyPosition;
+import dev.twme.blocket.api.BlocketAPI;
+import dev.twme.blocket.types.BlocketChunk;
+import dev.twme.blocket.types.BlocketPosition;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -18,16 +18,16 @@ import lombok.Setter;
 public class Stage {
     private final String name;
     private final World world;
-    private BlockifyPosition maxPosition, minPosition;
+    private BlocketPosition maxPosition, minPosition;
     private final Set<View> views;
     private int chunksPerTick;
     private final Audience audience;
 
-    public Stage(String name, World world, BlockifyPosition pos1, BlockifyPosition pos2, Audience audience) {
+    public Stage(String name, World world, BlocketPosition pos1, BlocketPosition pos2, Audience audience) {
         this.name = name;
         this.world = world;
-        this.maxPosition = new BlockifyPosition(Math.max(pos1.getX(), pos2.getX()), Math.max(pos1.getY(), pos2.getY()), Math.max(pos1.getZ(), pos2.getZ()));
-        this.minPosition = new BlockifyPosition(Math.min(pos1.getX(), pos2.getX()), Math.min(pos1.getY(), pos2.getY()), Math.min(pos1.getZ(), pos2.getZ()));
+        this.maxPosition = new BlocketPosition(Math.max(pos1.getX(), pos2.getX()), Math.max(pos1.getY(), pos2.getY()), Math.max(pos1.getZ(), pos2.getZ()));
+        this.minPosition = new BlocketPosition(Math.min(pos1.getX(), pos2.getX()), Math.min(pos1.getY(), pos2.getY()), Math.min(pos1.getZ(), pos2.getZ()));
         this.views = new HashSet<>();
         this.audience = audience;
         this.chunksPerTick = 1;
@@ -45,22 +45,22 @@ public class Stage {
      * Call this after you've done incremental updates (e.g., added/removed views for players).
      */
     public void sendBlocksToAudience() {
-        BlockifyAPI.getInstance().getBlockChangeManager().sendBlockChanges(this, audience, getChunks(), false);
+        BlocketAPI.getInstance().getBlockChangeManager().sendBlockChanges(this, audience, getChunks(), false);
     }
 
     /**
      * Refreshes a specific set of blocks to the audience.
      * Use this after making incremental block-level changes.
      */
-    public void refreshBlocksToAudience(Set<BlockifyPosition> blocks) {
+    public void refreshBlocksToAudience(Set<BlocketPosition> blocks) {
         for (Player player : audience.getOnlinePlayers()) {
-            BlockifyAPI.getInstance().getBlockChangeManager().sendMultiBlockChange(player, blocks);
+            BlocketAPI.getInstance().getBlockChangeManager().sendMultiBlockChange(player, blocks);
         }
     }
 
     public void addView(View view) {
         if (views.stream().anyMatch(v -> v.getName().equalsIgnoreCase(view.getName()))) {
-            BlockifyAPI.getInstance().getOwnerPlugin().getLogger().warning("View with name " + view.getName() + " already exists in stage " + name + "!");
+            BlocketAPI.getInstance().getOwnerPlugin().getLogger().warning("View with name " + view.getName() + " already exists in stage " + name + "!");
             return;
         }
         views.add(view);
@@ -79,11 +79,11 @@ public class Stage {
         return null;
     }
 
-    public Set<BlockifyChunk> getChunks() {
-        Set<BlockifyChunk> chunks = new HashSet<>();
+    public Set<BlocketChunk> getChunks() {
+        Set<BlocketChunk> chunks = new HashSet<>();
         for (int x = minPosition.getX() >> 4; x <= maxPosition.getX() >> 4; x++) {
             for (int z = minPosition.getZ() >> 4; z <= maxPosition.getZ() >> 4; z++) {
-                chunks.add(new BlockifyChunk(x, z));
+                chunks.add(new BlocketChunk(x, z));
             }
         }
         return chunks;
@@ -97,7 +97,7 @@ public class Stage {
      */
     public void addViewForPlayer(Player player, View view) {
         // This method uses BlockChangeManager's addViewToPlayer to merge the view's blocks into player's cache
-        BlockifyAPI.getInstance().getBlockChangeManager().addViewToPlayer(player, view);
+        BlocketAPI.getInstance().getBlockChangeManager().addViewToPlayer(player, view);
         // After updating what the player sees, refresh all blocks
         sendBlocksToAudience();
     }
@@ -121,7 +121,7 @@ public class Stage {
      */
     public void removeViewForPlayer(Player player, View view) {
         // Remove view's blocks from player's cache
-        BlockifyAPI.getInstance().getBlockChangeManager().removeViewFromPlayer(player, view);
+        BlocketAPI.getInstance().getBlockChangeManager().removeViewFromPlayer(player, view);
         // Refresh all blocks for audience after removing the view
         sendBlocksToAudience();
     }

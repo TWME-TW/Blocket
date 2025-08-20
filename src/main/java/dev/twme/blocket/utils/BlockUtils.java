@@ -1,6 +1,6 @@
 package dev.twme.blocket.utils;
 
-import dev.twme.blocket.types.BlockifyPosition;
+import dev.twme.blocket.types.BlocketPosition;
 import org.bukkit.Location;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.BlockData;
@@ -20,8 +20,8 @@ public class BlockUtils {
      * @param pos2 The second position.
      * @return A set of all the blocks between the two positions.
      */
-    public static Set<BlockifyPosition> getBlocksBetween(BlockifyPosition pos1, BlockifyPosition pos2) {
-        Set<BlockifyPosition> positions = new HashSet<>();
+    public static Set<BlocketPosition> getBlocksBetween(BlocketPosition pos1, BlocketPosition pos2) {
+        Set<BlocketPosition> positions = new HashSet<>();
         int minX = Math.min(pos1.getX(), pos2.getX());
         int minY = Math.min(pos1.getY(), pos2.getY());
         int minZ = Math.min(pos1.getZ(), pos2.getZ());
@@ -31,7 +31,7 @@ public class BlockUtils {
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
                 for (int z = minZ; z <= maxZ; z++) {
-                    positions.add(new BlockifyPosition(x, y, z));
+                    positions.add(new BlocketPosition(x, y, z));
                 }
             }
         }

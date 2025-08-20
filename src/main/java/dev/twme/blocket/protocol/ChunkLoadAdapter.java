@@ -9,9 +9,9 @@ import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChunkData;
 
-import dev.twme.blocket.api.BlockifyAPI;
+import dev.twme.blocket.api.BlocketAPI;
 import dev.twme.blocket.models.Stage;
-import dev.twme.blocket.types.BlockifyChunk;
+import dev.twme.blocket.types.BlocketChunk;
 
 public class ChunkLoadAdapter extends SimplePacketListenerAbstract {
 
@@ -26,7 +26,7 @@ public class ChunkLoadAdapter extends SimplePacketListenerAbstract {
             int chunkZ = chunkData.getColumn().getZ();
 
             // Get the stages the player is in. If the player is not in any stages, return.
-            List<Stage> stages = BlockifyAPI.getInstance().getStageManager().getStages(player);
+            List<Stage> stages = BlocketAPI.getInstance().getStageManager().getStages(player);
             if (stages == null || stages.isEmpty()) {
                 return;
             }
@@ -37,14 +37,14 @@ public class ChunkLoadAdapter extends SimplePacketListenerAbstract {
                 // If the chunk is not in the world, return.
                 if (!stage.getWorld().equals(player.getWorld())) return;
 
-                if (stage.getChunks().contains(new BlockifyChunk(chunkX, chunkZ))) {
-                    BlockifyChunk blockifyChunk = new BlockifyChunk(chunkX, chunkZ);
+                if (stage.getChunks().contains(new BlocketChunk(chunkX, chunkZ))) {
+                    BlocketChunk BlocketChunk = new BlocketChunk(chunkX, chunkZ);
 
                     // Cancel the packet to prevent the player from seeing the chunk
                     event.setCancelled(true);
 
                     // Send the chunk packet to the player
-                    BlockifyAPI.getInstance().getBlockChangeManager().getExecutorService().submit(() -> BlockifyAPI.getInstance().getBlockChangeManager().sendChunkPacket(player, blockifyChunk, false));
+                    BlocketAPI.getInstance().getBlockChangeManager().getExecutorService().submit(() -> BlocketAPI.getInstance().getBlockChangeManager().sendChunkPacket(player, BlocketChunk, false));
                 }
             }
         }

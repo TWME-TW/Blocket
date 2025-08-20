@@ -1,8 +1,8 @@
 package dev.twme.blocket.events;
 
 import dev.twme.blocket.models.Stage;
-import dev.twme.blocket.types.BlockifyChunk;
-import dev.twme.blocket.types.BlockifyPosition;
+import dev.twme.blocket.types.BlocketChunk;
+import dev.twme.blocket.types.BlocketPosition;
 import lombok.Getter;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.event.Event;
@@ -16,14 +16,14 @@ public class OnBlockChangeSendEvent extends Event {
 
     private static final HandlerList HANDLERS = new HandlerList();
     private final Stage stage;
-    private final Map<BlockifyChunk, Map<BlockifyPosition, BlockData>> blocks;
+    private final Map<BlocketChunk, Map<BlocketPosition, BlockData>> blocks;
 
     /**
      * Event that is called when block(s) are being changed.
      * @param stage The stage that the block change is happening in.
      * @param blocks The blocks that are being changed.
      */
-    public OnBlockChangeSendEvent(Stage stage, Map<BlockifyChunk, Map<BlockifyPosition, BlockData>> blocks) {
+    public OnBlockChangeSendEvent(Stage stage, Map<BlocketChunk, Map<BlocketPosition, BlockData>> blocks) {
         this.stage = stage;
         this.blocks = blocks;
     }

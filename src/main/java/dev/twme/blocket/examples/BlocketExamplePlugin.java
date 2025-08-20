@@ -1,13 +1,12 @@
 package dev.twme.blocket.examples;
 
-import dev.twme.blocket.api.BlockifyAPI;
-import dev.twme.blocket.api.BlockifyConfig;
-import codes.kooper.blockify.models.*;
+import dev.twme.blocket.api.BlocketAPI;
+import dev.twme.blocket.api.BlocketConfig;
 import dev.twme.blocket.models.Audience;
 import dev.twme.blocket.models.Pattern;
 import dev.twme.blocket.models.Stage;
 import dev.twme.blocket.models.View;
-import dev.twme.blocket.types.BlockifyPosition;
+import dev.twme.blocket.types.BlocketPosition;
 import dev.twme.blocket.utils.BlockUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -21,25 +20,25 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Example showing how to use Blockify as a library in your plugin
+ * Example showing how to use Blocket as a library in your plugin
  */
-public class BlockifyExamplePlugin extends JavaPlugin {
+public class BlocketExamplePlugin extends JavaPlugin {
     
-    private BlockifyAPI blockifyAPI;
+    private BlocketAPI blocketAPI;
     
     @Override
     public void onEnable() {
-        // Initialize Blockify API with custom configuration
-        BlockifyConfig config = BlockifyConfig.builder()
+        // Initialize Blocket API with custom configuration
+        BlocketConfig config = BlocketConfig.builder()
             .autoInitialize(true)
             .enableStageBoundListener(true)
             .enablePacketListeners(true)
             .defaultChunksPerTick(2)
             .build();
             
-        blockifyAPI = BlockifyAPI.initialize(this, config);
+        blocketAPI = BlocketAPI.initialize(this, config);
         
-        getLogger().info("Blockify API initialized successfully!");
+        getLogger().info("Blocket API initialized successfully!");
         
         // Example: Create a command to set up a private mine
         getCommand("createmine").setExecutor((sender, command, label, args) -> {
@@ -53,9 +52,9 @@ public class BlockifyExamplePlugin extends JavaPlugin {
     
     @Override
     public void onDisable() {
-        // Always shutdown Blockify API in onDisable
-        if (blockifyAPI != null) {
-            blockifyAPI.shutdown();
+        // Always shutdown Blocket API in onDisable
+        if (blocketAPI != null) {
+            blocketAPI.shutdown();
         }
     }
     
@@ -67,8 +66,8 @@ public class BlockifyExamplePlugin extends JavaPlugin {
         Location playerLoc = player.getLocation();
         
         // Define mine area (50x50x20 area starting from player location)
-        BlockifyPosition pos1 = BlockifyPosition.fromLocation(playerLoc);
-        BlockifyPosition pos2 = new BlockifyPosition(
+        BlocketPosition pos1 = BlocketPosition.fromLocation(playerLoc);
+        BlocketPosition pos2 = new BlocketPosition(
             pos1.getX() + 50, 
             pos1.getY() + 20, 
             pos1.getZ() + 50
@@ -93,7 +92,7 @@ public class BlockifyExamplePlugin extends JavaPlugin {
         mineStage.setChunksPerTick(3); // Process 3 chunks per tick for faster loading
         
         // Register stage
-        blockifyAPI.getStageManager().createStage(mineStage);
+        blocketAPI.getStageManager().createStage(mineStage);
         
         // Create view for ore deposits
         View oreView = new View("ore-deposits", mineStage, pattern, true); // true = breakable
@@ -102,7 +101,7 @@ public class BlockifyExamplePlugin extends JavaPlugin {
         
         // Fill the area with ore blocks (async for performance)
         getServer().getScheduler().runTaskAsynchronously(this, () -> {
-            Set<BlockifyPosition> mineBlocks = BlockUtils.getBlocksBetween(pos1, pos2);
+            Set<BlocketPosition> mineBlocks = BlockUtils.getBlocksBetween(pos1, pos2);
             
             // Add blocks to view (this will automatically distribute according to pattern)
             oreView.addBlocks(mineBlocks);
@@ -135,17 +134,17 @@ public class BlockifyExamplePlugin extends JavaPlugin {
         
         // Create stage and view
         Audience audience = Audience.fromPlayers(Set.of(player));
-        BlockifyPosition pos1 = BlockifyPosition.fromLocation(corner1);
-        BlockifyPosition pos2 = BlockifyPosition.fromLocation(corner2);
+        BlocketPosition pos1 = BlocketPosition.fromLocation(corner1);
+        BlocketPosition pos2 = BlocketPosition.fromLocation(corner2);
         
         Stage farmStage = new Stage("farm-" + player.getName(), corner1.getWorld(), pos1, pos2, audience);
-        blockifyAPI.getStageManager().createStage(farmStage);
+        blocketAPI.getStageManager().createStage(farmStage);
         
         View farmView = new View("wheat-field", farmStage, pattern, true);
         farmStage.addView(farmView);
         
         // Add farm blocks
-        Set<BlockifyPosition> farmBlocks = BlockUtils.getBlocksBetween(pos1, pos2);
+        Set<BlocketPosition> farmBlocks = BlockUtils.getBlocksBetween(pos1, pos2);
         farmView.addBlocks(farmBlocks);
         farmStage.sendBlocksToAudience();
         
@@ -156,7 +155,7 @@ public class BlockifyExamplePlugin extends JavaPlugin {
      * Example: Dynamic view management
      */
     public void addSecretLayer(Player player, String stageName) {
-        Stage stage = blockifyAPI.getStageManager().getStage(stageName);
+        Stage stage = blocketAPI.getStageManager().getStage(stageName);
         if (stage == null) {
             player.sendMessage("§c舞台不存在: " + stageName);
             return;
@@ -175,9 +174,9 @@ public class BlockifyExamplePlugin extends JavaPlugin {
         stage.addView(secretView);
         
         // Add secret ores only in a specific area
-        Set<BlockifyPosition> secretArea = BlockUtils.getBlocksBetween(
-            new BlockifyPosition(stage.getMinPosition().getX(), stage.getMinPosition().getY(), stage.getMinPosition().getZ()),
-            new BlockifyPosition(stage.getMinPosition().getX() + 10, stage.getMinPosition().getY() + 5, stage.getMinPosition().getZ() + 10)
+        Set<BlocketPosition> secretArea = BlockUtils.getBlocksBetween(
+            new BlocketPosition(stage.getMinPosition().getX(), stage.getMinPosition().getY(), stage.getMinPosition().getZ()),
+            new BlocketPosition(stage.getMinPosition().getX() + 10, stage.getMinPosition().getY() + 5, stage.getMinPosition().getZ() + 10)
         );
         
         secretView.addBlocks(secretArea);

@@ -1,18 +1,12 @@
-<div align="center">
-    <img src="blockify.png" width="320" height="320">
-</div>
+# Blocket
 
-[![](https://img.shields.io/github/license/kooperlol/blockify.svg)](https://github.com/Kooperlol/Blockify/blob/master/LICENSE.md) [![](https://jitpack.io/v/Kooperlol/Blockify.svg)](https://jitpack.io/#Kooperlol/Blockify) [![](https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/HeH2CuFCjz)
-
-# About
-**✅ 重構完成！** Blockify 已成功從插件轉換為獨立開發庫。
+## About
+**✅ 重構完成！** Blocket 已成功從插件轉換為獨立開發庫。
 
 Ever wondered how servers like FadeCloud or AkumaMC do private farms and mines?
-Well, let Blockify take care of it for you! Blockify is a public library that can manage and create client-sided blocks.
+Well, let Blocket take care of it for you! Blocket is a public library that can manage and create client-sided blocks.
 
-**🆕 Blockify is now a Library!** - You can integrate it directly into your plugins without needing to install a separate plugin dependency.
-
-Check out the [Wiki](https://github.com/Kooperlol/Blockify/wiki) to get started, and join the [Discord](https://discord.gg/BKrSKqaAZp) for help.
+**🆕 Blocket is now a Library!** - You can integrate it directly into your plugins without needing to install a separate plugin dependency.
 
 ## Installation
 
@@ -22,7 +16,7 @@ Add this to your plugin's `pom.xml`:
 ```xml
 <dependency>
     <groupId>dev.twme</groupId>
-    <artifactId>blockify-api</artifactId>
+    <artifactId>blocket-api</artifactId>
     <version>1.0.0</version>
     <scope>compile</scope>
 </dependency>
@@ -33,7 +27,7 @@ Add this to your plugin's `build.gradle`:
 
 ```gradle
 dependencies {
-    implementation 'codes.kooper:blockify-api:1.0.0'
+    implementation 'dev.twme:blocket-api:1.0.0'
 }
 ```
 
@@ -41,35 +35,35 @@ dependencies {
 
 ```java
 public class MyPlugin extends JavaPlugin {
-    private BlockifyAPI blockifyAPI;
+    private BlocketAPI BlocketAPI;
     
     @Override
     public void onEnable() {
-        // Initialize Blockify API
-        blockifyAPI = BlockifyAPI.initialize(this);
+        // Initialize Blocket API
+        BlocketAPI = BlocketAPI.initialize(this);
         
         // Your plugin logic here...
     }
     
     @Override
     public void onDisable() {
-        // Always shutdown Blockify API
-        if (blockifyAPI != null) {
-            blockifyAPI.shutdown();
+        // Always shutdown Blocket API
+        if (BlocketAPI != null) {
+            BlocketAPI.shutdown();
         }
     }
 }
 ```
 
 ## Features
-1. **Stage Management**: Blockify has different stages for an audience. Each stage has multiple "views", which represent different patterns within a stage.
+1. **Stage Management**: Blocket has different stages for an audience. Each stage has multiple "views", which represent different patterns within a stage.
 2. **Block Interaction Events**: The project handles block interaction events, such as starting to dig a block, as seen in the `BlockDigAdapter` class.
-3. **Block Breaking Events**: Blockify also handles block-breaking events, including checking if a block is breakable and sending block change updates to the player.
+3. **Block Breaking Events**: Blocket also handles block-breaking events, including checking if a block is breakable and sending block change updates to the player.
 4. **Chunk Loading**: The `ChunkLoadAdapter` class handles chunk-loading events, including sending block changes to the player.
 5. **Game Mode Checks**: The project checks the player's game mode and adjusts block-breaking speed accordingly.
-6. **Memory Management**: Blockify manages memory efficiently by using custom data types like `BlockifyPosition` and `BlockifyChunk`.
-7. **Custom Events:** Blockify has a custom event `BlockifyBlockBreakEvent` that is called when a block is broken. 
-8. **Complex Block Patterns:** Blockify can handle complex block patterns using the `BlockifyPattern` class. In addition, it can handle setting crop ages and other custom block data.
+6. **Memory Management**: Blocket manages memory efficiently by using custom data types like `BlocketPosition` and `BlocketChunk`.
+7. **Custom Events:** Blocket has a custom event `BlocketBlockBreakEvent` that is called when a block is broken. 
+8. **Complex Block Patterns:** Blocket can handle complex block patterns using the `BlocketPattern` class. In addition, it can handle setting crop ages and other custom block data.
 
 ## API 使用指南
 
@@ -81,39 +75,39 @@ public class MyPlugin extends JavaPlugin {
 
 ### 建立虛擬方塊系統
 
-#### 0. 初始化 Blockify API
-首先在你的插件中初始化 BlockifyAPI：
+#### 0. 初始化 Blocket API
+首先在你的插件中初始化 BlocketAPI：
 
 ```java
 public class MyPlugin extends JavaPlugin {
-    private BlockifyAPI blockifyAPI;
+    private BlocketAPI BlocketAPI;
     
     @Override
     public void onEnable() {
         // 基本初始化
-        blockifyAPI = BlockifyAPI.initialize(this);
+        BlocketAPI = BlocketAPI.initialize(this);
         
         // 或自定義配置初始化
-        BlockifyConfig config = BlockifyConfig.builder()
+        BlocketConfig config = BlocketConfig.builder()
             .autoInitialize(true)
             .enableStageBoundListener(true)
             .enablePacketListeners(true)
             .defaultChunksPerTick(2)
             .build();
-        blockifyAPI = BlockifyAPI.initialize(this, config);
+        BlocketAPI = BlocketAPI.initialize(this, config);
     }
     
     @Override
     public void onDisable() {
-        if (blockifyAPI != null) {
-            blockifyAPI.shutdown();
+        if (BlocketAPI != null) {
+            BlocketAPI.shutdown();
         }
     }
     
     // 使用 API
     public void createMine(Player player) {
-        StageManager stageManager = blockifyAPI.getStageManager();
-        BlockChangeManager blockManager = blockifyAPI.getBlockChangeManager();
+        StageManager stageManager = BlocketAPI.getStageManager();
+        BlockChangeManager blockManager = BlocketAPI.getBlockChangeManager();
         // ... 你的邏輯
     }
 }
@@ -158,17 +152,17 @@ blockPattern.
 
 ```java
 import models.dev.twme.blocket.Stage;
-import types.dev.twme.blocket.BlockifyPosition;
+import types.dev.twme.blocket.BlocketPosition;
 
 // 定義舞台範圍
-BlockifyPosition pos1 = new BlockifyPosition(100, 60, 100);
-        BlockifyPosition pos2 = new BlockifyPosition(150, 100, 150);
+BlocketPosition pos1 = new BlocketPosition(100, 60, 100);
+        BlocketPosition pos2 = new BlocketPosition(150, 100, 150);
 
         // 建立舞台
         Stage stage = new Stage("my-mine", world, pos1, pos2, audience);
 
 // 註冊舞台到管理器
-Blockify.
+Blocket.
 
         getInstance().
 
@@ -194,7 +188,7 @@ stage.
         addView(view);
 
         // 添加方塊到視圖
-        Set<BlockifyPosition> positions = BlockUtils.getBlocksBetween(pos1, pos2);
+        Set<BlocketPosition> positions = BlockUtils.getBlocksBetween(pos1, pos2);
 view.
 
         addBlocks(positions);
@@ -210,7 +204,7 @@ stage.
 #### 動態方塊管理
 ```java
 // 單獨添加方塊
-BlockifyPosition position = new BlockifyPosition(125, 75, 125);
+BlocketPosition position = new BlocketPosition(125, 75, 125);
 view.addBlock(position);
 
 // 設定特定方塊
@@ -223,7 +217,7 @@ view.resetBlock(position);
 view.removeBlock(position);
 
 // 批次操作
-Set<BlockifyPosition> blockPositions = Set.of(pos1, pos2, pos3);
+Set<BlocketPosition> blockPositions = Set.of(pos1, pos2, pos3);
 view.addBlocks(blockPositions);
 view.setBlocks(blockPositions, Material.EMERALD_ORE.createBlockData());
 view.removeBlocks(blockPositions);
@@ -240,7 +234,7 @@ stage.removeViewForPlayer(player, view);
 stage.removeViewForPlayer(player, "ore-layer");
 
 // 隱藏視圖
-Blockify.getInstance().getBlockChangeManager().hideView(player, view);
+Blocket.getInstance().getBlockChangeManager().hideView(player, view);
 ```
 
 #### 觀眾管理
@@ -261,14 +255,14 @@ audience.resetMiningSpeed(player);
 #### 事件處理
 
 ```java
-import dev.twme.blocket.events.BlockifyBreakEvent;
-import dev.twme.blocket.events.BlockifyInteractEvent;
+import dev.twme.blocket.events.BlocketBreakEvent;
+import dev.twme.blocket.events.BlocketInteractEvent;
 import dev.twme.blocket.events.PlayerEnterStageEvent;
 
 @EventHandler
-public void onBlockifyBreak(BlockifyBreakEvent event) {
+public void onBlocketBreak(BlocketBreakEvent event) {
     Player player = event.getPlayer();
-    BlockifyPosition position = event.getPosition();
+    BlocketPosition position = event.getPosition();
     View view = event.getView();
 
     // 自定義破壞邏輯
@@ -278,7 +272,7 @@ public void onBlockifyBreak(BlockifyBreakEvent event) {
 }
 
 @EventHandler
-public void onBlockifyInteract(BlockifyInteractEvent event) {
+public void onBlocketInteract(BlocketInteractEvent event) {
     // 處理方塊互動
 }
 
@@ -296,7 +290,7 @@ public void onPlayerEnterStage(PlayerEnterStageEvent event) {
 import utils.dev.twme.blocket.BlockUtils;
 
 // 獲取兩點間的所有方塊位置
-Set<BlockifyPosition> blocks = BlockUtils.getBlocksBetween(pos1, pos2);
+Set<BlocketPosition> blocks = BlockUtils.getBlocksBetween(pos1, pos2);
 
         // 設定作物年齡
         BlockData wheatData = Material.WHEAT.createBlockData();
@@ -306,16 +300,16 @@ Set<BlockifyPosition> blocks = BlockUtils.getBlocksBetween(pos1, pos2);
 #### 位置轉換
 
 ```java
-import types.dev.twme.blocket.BlockifyPosition;
-import types.dev.twme.blocket.BlockifyChunk;
+import types.dev.twme.blocket.BlocketPosition;
+import types.dev.twme.blocket.BlocketChunk;
 
-// 從 Location 建立 BlockifyPosition
-BlockifyPosition pos = BlockifyPosition.fromLocation(location);
+// 從 Location 建立 BlocketPosition
+BlocketPosition pos = BlocketPosition.fromLocation(location);
 
         // 轉換為其他格式
         Location loc = pos.toLocation(world);
         Vector vector = pos.toVector();
-        BlockifyChunk chunk = pos.toBlockifyChunk();
+        BlocketChunk chunk = pos.toBlocketChunk();
 
         // 計算距離
         double distance = pos1.distance(pos2);
@@ -325,17 +319,17 @@ BlockifyPosition pos = BlockifyPosition.fromLocation(location);
 ### 完整範例：建立礦場
 ```java
 public class MinePlugin extends JavaPlugin {
-    private BlockifyAPI blockifyAPI;
+    private BlocketAPI BlocketAPI;
     
     @Override
     public void onEnable() {
-        blockifyAPI = BlockifyAPI.initialize(this);
+        BlocketAPI = BlocketAPI.initialize(this);
     }
     
     @Override
     public void onDisable() {
-        if (blockifyAPI != null) {
-            blockifyAPI.shutdown();
+        if (BlocketAPI != null) {
+            BlocketAPI.shutdown();
         }
     }
     
@@ -354,18 +348,18 @@ public class MinePlugin extends JavaPlugin {
         Pattern pattern = new Pattern(orePattern);
         
         // 3. 建立舞台
-        BlockifyPosition pos1 = BlockifyPosition.fromLocation(corner1);
-        BlockifyPosition pos2 = BlockifyPosition.fromLocation(corner2);
+        BlocketPosition pos1 = BlocketPosition.fromLocation(corner1);
+        BlocketPosition pos2 = BlocketPosition.fromLocation(corner2);
         
         Stage stage = new Stage("player-mine", corner1.getWorld(), pos1, pos2, audience);
-        blockifyAPI.getStageManager().createStage(stage);
+        BlocketAPI.getStageManager().createStage(stage);
         
         // 4. 建立視圖
         View mineView = new View("ore-deposits", stage, pattern, true);
         stage.addView(mineView);
         
         // 5. 填充區域
-        Set<BlockifyPosition> mineBlocks = BlockUtils.getBlocksBetween(pos1, pos2);
+        Set<BlocketPosition> mineBlocks = BlockUtils.getBlocksBetween(pos1, pos2);
         mineView.addBlocks(mineBlocks);
         
         // 6. 發送給玩家
@@ -386,11 +380,11 @@ public class MinePlugin extends JavaPlugin {
 
 ## 🎉 重構完成摘要
 
-Blockify 已成功從 Bukkit 插件重構為獨立開發庫！主要改變包括：
+Blocket 已成功從 Bukkit 插件重構為獨立開發庫！主要改變包括：
 
 ### ✅ 已完成的改變
-- **新 API 架構**: 創建了 `BlockifyAPI` 類作為主要入口點
-- **配置系統**: 實現了 `BlockifyConfig` 用於靈活配置
+- **新 API 架構**: 創建了 `BlocketAPI` 類作為主要入口點
+- **配置系統**: 實現了 `BlocketConfig` 用於靈活配置
 - **依賴注入**: 所有管理器類現在使用 API 參考而非靜態單例
 - **生命週期管理**: 提供了適當的初始化和關閉方法
 - **Maven 配置**: 更新為庫分發配置，生成帶源碼的 JAR
@@ -398,13 +392,13 @@ Blockify 已成功從 Bukkit 插件重構為獨立開發庫！主要改變包括
 - **示例代碼**: 提供完整的使用範例和最佳實踐
 
 ### 🔄 架構變更
-- 移除了舊的插件主類 (`Blockify.java`)
+- 移除了舊的插件主類 (`Blocket.java`)
 - 移除了 `plugin.yml` （不再需要）
-- 所有 `Blockify.getInstance()` 調用更新為 `BlockifyAPI.getInstance()`
-- 管理器類現在接受 `BlockifyAPI` 參數而非使用靜態訪問
+- 所有 `Blocket.getInstance()` 調用更新為 `BlocketAPI.getInstance()`
+- 管理器類現在接受 `BlocketAPI` 參數而非使用靜態訪問
 
 ### 📦 輸出文件
-- `blockify-api-1.0.0.jar` - 主要庫文件
-- `blockify-api-1.0.0-sources.jar` - 源碼文件
+- `blocket-api-1.0.0.jar` - 主要庫文件
+- `blocket-api-1.0.0-sources.jar` - 源碼文件
 
-開發者現在可以直接將 Blockify 作為依賴項整合到他們的插件中，無需單獨安裝插件！
+開發者現在可以直接將 Blocket 作為依賴項整合到他們的插件中，無需單獨安裝插件！

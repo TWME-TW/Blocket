@@ -8,7 +8,7 @@ import java.util.Map;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import dev.twme.blocket.api.BlockifyAPI;
+import dev.twme.blocket.api.BlocketAPI;
 import dev.twme.blocket.events.CreateStageEvent;
 import dev.twme.blocket.events.DeleteStageEvent;
 import dev.twme.blocket.models.Stage;
@@ -17,9 +17,9 @@ import lombok.Getter;
 @Getter
 public class StageManager {
     private final Map<String, Stage> stages;
-    private final BlockifyAPI api;
+    private final BlocketAPI api;
 
-    public StageManager(BlockifyAPI api) {
+    public StageManager(BlocketAPI api) {
         this.api = api;
         this.stages = new HashMap<>();
     }

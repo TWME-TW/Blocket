@@ -14,21 +14,21 @@ import dev.twme.blocket.protocol.ChunkLoadAdapter;
 import lombok.Getter;
 
 /**
- * Main API class for Blockify Library
+ * Main API class for Blocket Library
  * 
  * Usage:
- * BlockifyAPI api = BlockifyAPI.initialize(plugin);
+ * BlocketAPI api = BlocketAPI.initialize(plugin);
  * StageManager stageManager = api.getStageManager();
  */
 @Getter
-public class BlockifyAPI {
-    private static BlockifyAPI instance;
+public class BlocketAPI {
+    private static BlocketAPI instance;
     
     private final Plugin ownerPlugin;
     private final StageManager stageManager;
     private final BlockChangeManager blockChangeManager;
     private final ServerVersion serverVersion;
-    private final BlockifyConfig config;
+    private final BlocketConfig config;
     
     // Protocol listeners
     private BlockDigAdapter blockDigAdapter;
@@ -39,7 +39,7 @@ public class BlockifyAPI {
     /**
      * Private constructor - use initialize() methods
      */
-    private BlockifyAPI(Plugin plugin, BlockifyConfig config) {
+    private BlocketAPI(Plugin plugin, BlocketConfig config) {
         this.ownerPlugin = plugin;
         this.config = config;
         this.serverVersion = PacketEvents.getAPI().getServerManager().getVersion();
@@ -53,53 +53,53 @@ public class BlockifyAPI {
             initializeListeners();
         }
         
-        plugin.getLogger().info("Blockify API initialized for plugin: " + plugin.getName());
+        plugin.getLogger().info("Blocket API initialized for plugin: " + plugin.getName());
     }
     
     /**
-     * Initialize BlockifyAPI with default configuration
+     * Initialize BlocketAPI with default configuration
      * 
-     * @param plugin The plugin that will own this BlockifyAPI instance
-     * @return BlockifyAPI instance
+     * @param plugin The plugin that will own this BlocketAPI instance
+     * @return BlocketAPI instance
      * @throws IllegalStateException if already initialized
      */
-    public static BlockifyAPI initialize(Plugin plugin) {
-        return initialize(plugin, BlockifyConfig.defaultConfig());
+    public static BlocketAPI initialize(Plugin plugin) {
+        return initialize(plugin, BlocketConfig.defaultConfig());
     }
     
     /**
-     * Initialize BlockifyAPI with custom configuration
+     * Initialize BlocketAPI with custom configuration
      * 
-     * @param plugin The plugin that will own this BlockifyAPI instance
+     * @param plugin The plugin that will own this BlocketAPI instance
      * @param config Custom configuration
-     * @return BlockifyAPI instance
+     * @return BlocketAPI instance
      * @throws IllegalStateException if already initialized
      */
-    public static BlockifyAPI initialize(Plugin plugin, BlockifyConfig config) {
+    public static BlocketAPI initialize(Plugin plugin, BlocketConfig config) {
         if (instance != null) {
-            throw new IllegalStateException("BlockifyAPI is already initialized by plugin: " + 
+            throw new IllegalStateException("BlocketAPI is already initialized by plugin: " + 
                 instance.ownerPlugin.getName());
         }
         
-        instance = new BlockifyAPI(plugin, config);
+        instance = new BlocketAPI(plugin, config);
         return instance;
     }
     
     /**
-     * Get the current BlockifyAPI instance
+     * Get the current BlocketAPI instance
      * 
-     * @return BlockifyAPI instance
+     * @return BlocketAPI instance
      * @throws IllegalStateException if not initialized
      */
-    public static BlockifyAPI getInstance() {
+    public static BlocketAPI getInstance() {
         if (instance == null) {
-            throw new IllegalStateException("BlockifyAPI is not initialized! Call initialize() first.");
+            throw new IllegalStateException("BlocketAPI is not initialized! Call initialize() first.");
         }
         return instance;
     }
     
     /**
-     * Check if BlockifyAPI is initialized
+     * Check if BlocketAPI is initialized
      * 
      * @return true if initialized
      */
@@ -134,7 +134,7 @@ public class BlockifyAPI {
      * This should be called in the plugin's onDisable() method
      */
     public void shutdown() {
-        ownerPlugin.getLogger().info("Shutting down Blockify API...");
+        ownerPlugin.getLogger().info("Shutting down Blocket API...");
         
         // Shutdown managers
         if (blockChangeManager != null) {
@@ -157,11 +157,11 @@ public class BlockifyAPI {
         // Clear static instance
         instance = null;
         
-        ownerPlugin.getLogger().info("Blockify API shutdown complete.");
+        ownerPlugin.getLogger().info("Blocket API shutdown complete.");
     }
     
     /**
-     * Get the plugin that owns this BlockifyAPI instance
+     * Get the plugin that owns this BlocketAPI instance
      * 
      * @return Owner plugin
      */
@@ -174,7 +174,7 @@ public class BlockifyAPI {
      * 
      * @return Configuration object
      */
-    public BlockifyConfig getConfig() {
+    public BlocketConfig getConfig() {
         return config;
     }
 }

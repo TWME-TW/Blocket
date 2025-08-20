@@ -2,7 +2,7 @@ package dev.twme.blocket.events;
 
 import dev.twme.blocket.models.Stage;
 import dev.twme.blocket.models.View;
-import dev.twme.blocket.types.BlockifyPosition;
+import dev.twme.blocket.types.BlocketPosition;
 import lombok.Getter;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
@@ -12,11 +12,11 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 @Getter
-public class BlockifyInteractEvent extends Event implements Cancellable {
+public class BlocketInteractEvent extends Event implements Cancellable {
     private static final HandlerList HANDLERS = new HandlerList();
     private boolean cancelled = false;
     private final Player player;
-    private final BlockifyPosition position;
+    private final BlocketPosition position;
     private final BlockData blockData;
     private final View view;
     private final Stage stage;
@@ -30,7 +30,7 @@ public class BlockifyInteractEvent extends Event implements Cancellable {
      * @param view The view that the player is currently in.
      * @param stage The stage that the player is currently in.
      */
-    public BlockifyInteractEvent(Player player, BlockifyPosition position, BlockData blockData, View view, Stage stage) {
+    public BlocketInteractEvent(Player player, BlocketPosition position, BlockData blockData, View view, Stage stage) {
         this.player = player;
         this.position = position;
         this.blockData = blockData;
