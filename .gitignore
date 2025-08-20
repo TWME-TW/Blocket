@@ -52,3 +52,4 @@ plugins/
 
 # Environment files
 .env
+.kilocode
