@@ -1,17 +1,19 @@
 # Blocket
 
-## About
+## 關於
+
 **✅ 重構完成！** Blocket 已成功從插件轉換為獨立開發庫。
 
-Ever wondered how servers like FadeCloud or AkumaMC do private farms and mines?
-Well, let Blocket take care of it for you! Blocket is a public library that can manage and create client-sided blocks.
+是否曾經想過像 FadeCloud 或 AkumaMC 這樣的伺服器如何實現私人農場和礦場？
+現在，Blocket 可以幫助您完成這些功能！Blocket 是一個公共庫，可以管理和創建客戶端的虛擬方塊。
 
-**🆕 Blocket is now a Library!** - You can integrate it directly into your plugins without needing to install a separate plugin dependency.
+**🆕 Blocket 現在是一個開發庫！** - 您可以直接將其整合到您的插件中，而無需安裝單獨的插件依賴。
 
-## Installation
+## 安裝
 
-### As a Maven Dependency
-Add this to your plugin's `pom.xml`:
+### 作為 Maven 依賴
+
+在您的插件的 `pom.xml` 中添加以下內容：
 
 ```xml
 <dependency>
@@ -22,8 +24,9 @@ Add this to your plugin's `pom.xml`:
 </dependency>
 ```
 
-### As a Gradle Dependency
-Add this to your plugin's `build.gradle`:
+### 作為 Gradle 依賴
+
+在您的插件的 `build.gradle` 中添加以下內容：
 
 ```gradle
 dependencies {
@@ -31,7 +34,7 @@ dependencies {
 }
 ```
 
-### Quick Start Example
+### 快速開始範例
 
 ```java
 public class MyPlugin extends JavaPlugin {
@@ -39,15 +42,15 @@ public class MyPlugin extends JavaPlugin {
     
     @Override
     public void onEnable() {
-        // Initialize Blocket API
+        // 初始化 Blocket API
         BlocketAPI = BlocketAPI.initialize(this);
         
-        // Your plugin logic here...
+        // 插件邏輯...
     }
     
     @Override
     public void onDisable() {
-        // Always shutdown Blocket API
+        // 確保關閉 Blocket API
         if (BlocketAPI != null) {
             BlocketAPI.shutdown();
         }
@@ -55,28 +58,41 @@ public class MyPlugin extends JavaPlugin {
 }
 ```
 
-## Features
-1. **Stage Management**: Blocket has different stages for an audience. Each stage has multiple "views", which represent different patterns within a stage.
-2. **Block Interaction Events**: The project handles block interaction events, such as starting to dig a block, as seen in the `BlockDigAdapter` class.
-3. **Block Breaking Events**: Blocket also handles block-breaking events, including checking if a block is breakable and sending block change updates to the player.
-4. **Chunk Loading**: The `ChunkLoadAdapter` class handles chunk-loading events, including sending block changes to the player.
-5. **Game Mode Checks**: The project checks the player's game mode and adjusts block-breaking speed accordingly.
-6. **Memory Management**: Blocket manages memory efficiently by using custom data types like `BlocketPosition` and `BlocketChunk`.
-7. **Custom Events:** Blocket has a custom event `BlocketBlockBreakEvent` that is called when a block is broken. 
-8. **Complex Block Patterns:** Blocket can handle complex block patterns using the `BlocketPattern` class. In addition, it can handle setting crop ages and other custom block data.
+## 功能
+
+1. **舞台管理**：Blocket 提供不同的舞台給觀眾，每個舞台包含多個 "視圖"，代表舞台內的不同模式。
+
+2. **方塊互動事件**：專案處理方塊互動事件，例如開始挖掘方塊，這可以在 `BlockDigAdapter` 類中看到。
+
+3. **方塊破壞事件**：Blocket 處理方塊破壞事件，包括檢查方塊是否可破壞並向玩家發送方塊變更更新。
+
+4. **區塊加載**：`ChunkLoadAdapter` 類處理區塊加載事件，包括向玩家發送方塊變更。
+
+5. **遊戲模式檢查**：專案檢查玩家的遊戲模式並相應調整方塊破壞速度。
+
+6. **記憶體管理**：Blocket 通過使用自定義數據類型（如 `BlocketPosition` 和 `BlocketChunk`）高效管理記憶體。
+
+7. **自定義事件**：Blocket 提供自定義事件 `BlocketBlockBreakEvent`，在方塊被破壞時觸發。
+
+8. **複雜方塊模式**：Blocket 可以通過 `BlocketPattern` 類處理複雜的方塊模式。此外，它還可以處理作物年齡和其他自定義方塊數據。
 
 ## API 使用指南
 
 ### 基本概念
-- **Stage（舞台）**: 代表一個有界限的區域，包含一個觀眾群體（Audience）
-- **View（視圖）**: Stage 中的一個圖層，包含虛擬方塊的模式（Pattern）
-- **Pattern（模式）**: 定義了方塊類型及其出現機率的配置
-- **Audience（觀眾）**: 可以看到虛擬方塊的玩家集合
+
+- **舞台（Stage）**: 代表一個有界限的區域，包含一個觀眾群體（Audience）。
+
+- **視圖（View）**: 舞台中的一個圖層，包含虛擬方塊的模式（Pattern）。
+
+- **模式（Pattern）**: 定義了方塊類型及其出現機率的配置。
+
+- **觀眾（Audience）**: 可以看到虛擬方塊的玩家集合。
 
 ### 建立虛擬方塊系統
 
 #### 0. 初始化 Blocket API
-首先在你的插件中初始化 BlocketAPI：
+
+首先在您的插件中初始化 BlocketAPI：
 
 ```java
 public class MyPlugin extends JavaPlugin {
@@ -108,7 +124,7 @@ public class MyPlugin extends JavaPlugin {
     public void createMine(Player player) {
         StageManager stageManager = BlocketAPI.getStageManager();
         BlockChangeManager blockManager = BlocketAPI.getBlockChangeManager();
-        // ... 你的邏輯
+        // ... 您的邏輯
     }
 }
 ```
@@ -120,11 +136,11 @@ import models.dev.twme.blocket.Audience;
 
 // 從玩家集合建立觀眾
 Set<Player> players = Set.of(player1, player2);
-        Audience audience = Audience.fromPlayers(players);
+Audience audience = Audience.fromPlayers(players);
 
-        // 或從 UUID 集合建立
-        Set<UUID> playerUUIDs = Set.of(uuid1, uuid2);
-        Audience audience = Audience.fromUUIDs(playerUUIDs);
+// 或從 UUID 集合建立
+Set<UUID> playerUUIDs = Set.of(uuid1, uuid2);
+Audience audience = Audience.fromUUIDs(playerUUIDs);
 ```
 
 #### 2. 定義方塊模式
@@ -135,17 +151,11 @@ import org.bukkit.Material;
 
 // 建立方塊模式（支援權重分配）
 Map<BlockData, Double> blockPattern = new HashMap<>();
-blockPattern.
+blockPattern.put(Material.STONE.createBlockData(), 70.0); // 70% 機率
+blockPattern.put(Material.COAL_ORE.createBlockData(), 20.0); // 20% 機率
+blockPattern.put(Material.IRON_ORE.createBlockData(), 10.0); // 10% 機率
 
-        put(Material.STONE.createBlockData(), 70.0); // 70% 機率
-        blockPattern.
-
-        put(Material.COAL_ORE.createBlockData(), 20.0); // 20% 機率
-        blockPattern.
-
-        put(Material.IRON_ORE.createBlockData(), 10.0); // 10% 機率
-
-        Pattern pattern = new Pattern(blockPattern);
+Pattern pattern = new Pattern(blockPattern);
 ```
 
 #### 3. 建立舞台
@@ -156,19 +166,13 @@ import types.dev.twme.blocket.BlocketPosition;
 
 // 定義舞台範圍
 BlocketPosition pos1 = new BlocketPosition(100, 60, 100);
-        BlocketPosition pos2 = new BlocketPosition(150, 100, 150);
+BlocketPosition pos2 = new BlocketPosition(150, 100, 150);
 
-        // 建立舞台
-        Stage stage = new Stage("my-mine", world, pos1, pos2, audience);
+// 建立舞台
+Stage stage = new Stage("my-mine", world, pos1, pos2, audience);
 
 // 註冊舞台到管理器
-Blocket.
-
-        getInstance().
-
-        getStageManager().
-
-        createStage(stage);
+Blocket.getInstance().getStageManager().createStage(stage);
 ```
 
 #### 4. 建立視圖並添加方塊
@@ -178,30 +182,21 @@ import models.dev.twme.blocket.View;
 
 // 建立視圖
 View view = new View("ore-layer", stage, pattern, true); // true = 可破壞
-view.
-
-        setZIndex(1); // 設定圖層優先級
+view.setZIndex(1); // 設定圖層優先級
 
 // 添加視圖到舞台
-stage.
+stage.addView(view);
 
-        addView(view);
-
-        // 添加方塊到視圖
-        Set<BlocketPosition> positions = BlockUtils.getBlocksBetween(pos1, pos2);
-view.
-
-        addBlocks(positions);
+// 添加方塊到視圖
+Set<BlocketPosition> positions = BlockUtils.getBlocksBetween(pos1, pos2);
+view.addBlocks(positions);
 
 // 發送方塊變化給觀眾
-stage.
-
-        sendBlocksToAudience();
+stage.sendBlocksToAudience();
 ```
 
-### 高級功能
-
 #### 動態方塊管理
+
 ```java
 // 單獨添加方塊
 BlocketPosition position = new BlocketPosition(125, 75, 125);
@@ -224,6 +219,7 @@ view.removeBlocks(blockPositions);
 ```
 
 #### 玩家視圖管理
+
 ```java
 // 為特定玩家添加視圖
 stage.addViewForPlayer(player, view);
@@ -238,6 +234,7 @@ Blocket.getInstance().getBlockChangeManager().hideView(player, view);
 ```
 
 #### 觀眾管理
+
 ```java
 // 添加玩家到觀眾
 audience.addPlayer(player);
@@ -252,71 +249,8 @@ audience.setMiningSpeed(player, 2.0f); // 2倍速度
 audience.resetMiningSpeed(player);
 ```
 
-#### 事件處理
-
-```java
-import dev.twme.blocket.events.BlocketBreakEvent;
-import dev.twme.blocket.events.BlocketInteractEvent;
-import dev.twme.blocket.events.PlayerEnterStageEvent;
-
-@EventHandler
-public void onBlocketBreak(BlocketBreakEvent event) {
-    Player player = event.getPlayer();
-    BlocketPosition position = event.getPosition();
-    View view = event.getView();
-
-    // 自定義破壞邏輯
-    if (shouldCancelBreak(player)) {
-        event.setCancelled(true);
-    }
-}
-
-@EventHandler
-public void onBlocketInteract(BlocketInteractEvent event) {
-    // 處理方塊互動
-}
-
-@EventHandler
-public void onPlayerEnterStage(PlayerEnterStageEvent event) {
-    // 玩家進入舞台時的處理
-}
-```
-
-### 實用工具
-
-#### BlockUtils 工具類
-
-```java
-import utils.dev.twme.blocket.BlockUtils;
-
-// 獲取兩點間的所有方塊位置
-Set<BlocketPosition> blocks = BlockUtils.getBlocksBetween(pos1, pos2);
-
-        // 設定作物年齡
-        BlockData wheatData = Material.WHEAT.createBlockData();
-        BlockData agedWheat = BlockUtils.setAge(wheatData, 7); // 完全成熟
-```
-
-#### 位置轉換
-
-```java
-import types.dev.twme.blocket.BlocketPosition;
-import types.dev.twme.blocket.BlocketChunk;
-
-// 從 Location 建立 BlocketPosition
-BlocketPosition pos = BlocketPosition.fromLocation(location);
-
-        // 轉換為其他格式
-        Location loc = pos.toLocation(world);
-        Vector vector = pos.toVector();
-        BlocketChunk chunk = pos.toBlocketChunk();
-
-        // 計算距離
-        double distance = pos1.distance(pos2);
-        double distanceSquared = pos1.distanceSquared(pos2);
-```
-
 ### 完整範例：建立礦場
+
 ```java
 public class MinePlugin extends JavaPlugin {
     private BlocketAPI BlocketAPI;
@@ -370,12 +304,17 @@ public class MinePlugin extends JavaPlugin {
 }
 
 ### 性能優化建議
-1. **分批處理**: 對於大型區域，使用 `stage.setChunksPerTick()` 控制每 tick 處理的區塊數量
-2. **非同步操作**: 大量方塊操作建議在非同步執行緒中進行
-3. **記憶體管理**: 適時清理不需要的視圖和舞台
-4. **事件處理**: 在事件處理器中避免重型運算
-   
-## Dependencies
+
+1. **分批處理**: 對於大型區域，使用 `stage.setChunksPerTick()` 控制每 tick 處理的區塊數量。
+
+2. **非同步操作**: 大量方塊操作建議在非同步執行緒中進行。
+
+3. **記憶體管理**: 適時清理不需要的視圖和舞台。
+
+4. **事件處理**: 在事件處理器中避免重型運算。
+
+## 依賴項
+
 - [PacketEvents](https://github.com/retrooper/packetevents)
 
 ## 🎉 重構完成摘要
@@ -383,22 +322,35 @@ public class MinePlugin extends JavaPlugin {
 Blocket 已成功從 Bukkit 插件重構為獨立開發庫！主要改變包括：
 
 ### ✅ 已完成的改變
-- **新 API 架構**: 創建了 `BlocketAPI` 類作為主要入口點
-- **配置系統**: 實現了 `BlocketConfig` 用於靈活配置
-- **依賴注入**: 所有管理器類現在使用 API 參考而非靜態單例
-- **生命週期管理**: 提供了適當的初始化和關閉方法
-- **Maven 配置**: 更新為庫分發配置，生成帶源碼的 JAR
-- **文檔更新**: 完整的 API 文檔、安裝指南和遷移指南
-- **示例代碼**: 提供完整的使用範例和最佳實踐
+
+- **新 API 架構**: 創建了 `BlocketAPI` 類作為主要入口點。
+
+- **配置系統**: 實現了 `BlocketConfig` 用於靈活配置。
+
+- **依賴注入**: 所有管理器類現在使用 API 參考而非靜態單例。
+
+- **生命週期管理**: 提供了適當的初始化和關閉方法。
+
+- **Maven 配置**: 更新為庫分發配置，生成帶源碼的 JAR。
+
+- **文檔更新**: 完整的 API 文檔、安裝指南和遷移指南。
+
+- **示例代碼**: 提供完整的使用範例和最佳實踐。
 
 ### 🔄 架構變更
-- 移除了舊的插件主類 (`Blocket.java`)
-- 移除了 `plugin.yml` （不再需要）
-- 所有 `Blocket.getInstance()` 調用更新為 `BlocketAPI.getInstance()`
-- 管理器類現在接受 `BlocketAPI` 參數而非使用靜態訪問
+
+- 移除了舊的插件主類 (`Blocket.java`)。
+
+- 移除了 `plugin.yml` （不再需要）。
+
+- 所有 `Blocket.getInstance()` 調用更新為 `BlocketAPI.getInstance()`。
+
+- 管理器類現在接受 `BlocketAPI` 參數而非使用靜態訪問。
 
 ### 📦 輸出文件
-- `blocket-api-1.0.0.jar` - 主要庫文件
-- `blocket-api-1.0.0-sources.jar` - 源碼文件
+
+- `blocket-api-1.0.0.jar` - 主要庫文件。
+
+- `blocket-api-1.0.0-sources.jar` - 源碼文件。
 
 開發者現在可以直接將 Blocket 作為依賴項整合到他們的插件中，無需單獨安裝插件！
