@@ -1,97 +1,202 @@
 package dev.twme.blocket.api;
 
-import lombok.Getter;
-import lombok.Setter;
-
 /**
  * Configuration class for BlocketAPI initialization
+ * This class implements the Builder pattern for creating immutable configuration objects.
  */
-@Getter
-@Setter
 public class BlocketConfig {
-    private boolean autoInitialize = true;
-    private boolean enableStageBoundListener = true;
-    private boolean enablePacketListeners = true;
-    private int defaultChunksPerTick = 1;
+    private final boolean autoInitialize;
+    private final boolean enableStageBoundListener;
+    private final boolean enablePacketListeners;
+    private final int defaultChunksPerTick;
+    private final int blockCacheSize;
     
     /**
      * Private constructor - use builder methods
+     * Creates an immutable configuration object
+     *
+     * @param builder The builder containing the configuration values
      */
-    private BlocketConfig() {}
+    private BlocketConfig(Builder builder) {
+        this.autoInitialize = builder.autoInitialize;
+        this.enableStageBoundListener = builder.enableStageBoundListener;
+        this.enablePacketListeners = builder.enablePacketListeners;
+        this.defaultChunksPerTick = builder.defaultChunksPerTick;
+        this.blockCacheSize = builder.blockCacheSize;
+    }
     
     /**
      * Create default configuration
-     * 
+     *
      * @return Default configuration
      */
     public static BlocketConfig defaultConfig() {
-        return new BlocketConfig();
+        return new Builder().build();
     }
     
     /**
      * Create configuration builder
-     * 
+     *
      * @return Configuration builder
      */
-    public static BlocketConfig builder() {
-        return new BlocketConfig();
+    public static Builder builder() {
+        return new Builder();
     }
     
     /**
-     * Enable or disable auto initialization of listeners
-     * 
-     * @param enable true to enable auto initialization
-     * @return this configuration for chaining
+     * Get auto initialization setting
+     *
+     * @return true if auto initialization is enabled
      */
-    public BlocketConfig autoInitialize(boolean enable) {
-        this.autoInitialize = enable;
-        return this;
+    public boolean isAutoInitialize() {
+        return autoInitialize;
     }
     
     /**
-     * Enable or disable stage bound listener
-     * This listener handles player movement events for stage boundaries
-     * 
-     * @param enable true to enable
-     * @return this configuration for chaining
+     * Get stage bound listener setting
+     *
+     * @return true if stage bound listener is enabled
      */
-    public BlocketConfig enableStageBoundListener(boolean enable) {
-        this.enableStageBoundListener = enable;
-        return this;
+    public boolean isEnableStageBoundListener() {
+        return enableStageBoundListener;
     }
     
     /**
-     * Enable or disable packet listeners
-     * These listeners handle block interactions and chunk loading
-     * 
-     * @param enable true to enable
-     * @return this configuration for chaining
+     * Get packet listeners setting
+     *
+     * @return true if packet listeners are enabled
      */
-    public BlocketConfig enablePacketListeners(boolean enable) {
-        this.enablePacketListeners = enable;
-        return this;
+    public boolean isEnablePacketListeners() {
+        return enablePacketListeners;
     }
     
     /**
-     * Set default chunks per tick for all stages
-     * 
-     * @param chunksPerTick number of chunks to process per tick
-     * @return this configuration for chaining
+     * Get default chunks per tick setting
+     *
+     * @return number of chunks to process per tick
      */
-    public BlocketConfig defaultChunksPerTick(int chunksPerTick) {
-        if (chunksPerTick <= 0) {
-            throw new IllegalArgumentException("Chunks per tick must be positive");
+    public int getDefaultChunksPerTick() {
+        return defaultChunksPerTick;
+    }
+    
+    /**
+     * Get block cache size setting
+     *
+     * @return size of block cache
+     */
+    public int getBlockCacheSize() {
+        return blockCacheSize;
+    }
+    
+    /**
+     * Builder class for creating BlocketConfig instances
+     * This class implements the Builder pattern for creating immutable configuration objects.
+     */
+    public static class Builder {
+        private boolean autoInitialize = true;
+        private boolean enableStageBoundListener = true;
+        private boolean enablePacketListeners = true;
+        private int defaultChunksPerTick = 1;
+        private int blockCacheSize = 1000;
+        
+        /**
+         * Private constructor - use BlocketConfig.builder() to get an instance
+         */
+        private Builder() {}
+        
+        /**
+         * Enable or disable auto initialization of listeners
+         *
+         * @param enable true to enable auto initialization
+         * @return this builder for chaining
+         */
+        public Builder autoInitialize(boolean enable) {
+            this.autoInitialize = enable;
+            return this;
         }
-        this.defaultChunksPerTick = chunksPerTick;
-        return this;
-    }
-    
-    /**
-     * Build the final configuration
-     * 
-     * @return this configuration
-     */
-    public BlocketConfig build() {
-        return this;
+        
+        /**
+         * Enable or disable stage bound listener
+         * This listener handles player movement events for stage boundaries
+         *
+         * @param enable true to enable
+         * @return this builder for chaining
+         */
+        public Builder enableStageBoundListener(boolean enable) {
+            this.enableStageBoundListener = enable;
+            return this;
+        }
+        
+        /**
+         * Enable or disable packet listeners
+         * These listeners handle block interactions and chunk loading
+         *
+         * @param enable true to enable
+         * @return this builder for chaining
+         */
+        public Builder enablePacketListeners(boolean enable) {
+            this.enablePacketListeners = enable;
+            return this;
+        }
+        
+        /**
+         * Set default chunks per tick for all stages
+         *
+         * @param chunksPerTick number of chunks to process per tick
+         * @return this builder for chaining
+         * @throws IllegalArgumentException if chunksPerTick is not positive
+         */
+        public Builder defaultChunksPerTick(int chunksPerTick) {
+            if (chunksPerTick <= 0) {
+                throw new IllegalArgumentException("Chunks per tick must be positive");
+            }
+            this.defaultChunksPerTick = chunksPerTick;
+            return this;
+        }
+        
+        /**
+         * Set block cache size
+         *
+         * @param cacheSize size of block cache
+         * @return this builder for chaining
+         * @throws IllegalArgumentException if cacheSize is not positive
+         */
+        public Builder blockCacheSize(int cacheSize) {
+            if (cacheSize <= 0) {
+                throw new IllegalArgumentException("Cache size must be positive");
+            }
+            this.blockCacheSize = cacheSize;
+            return this;
+        }
+        
+        /**
+         * Build the final configuration
+         * This method creates an immutable BlocketConfig instance with the current settings
+         * and validates all configuration parameters.
+         *
+         * @return immutable BlocketConfig instance
+         * @throws IllegalArgumentException if any configuration parameter is invalid
+         */
+        public BlocketConfig build() {
+            // Validate configuration parameters
+            validateConfig();
+            
+            // Create immutable configuration object
+            return new BlocketConfig(this);
+        }
+        
+        /**
+         * Validate all configuration parameters
+         *
+         * @throws IllegalArgumentException if any configuration parameter is invalid
+         */
+        private void validateConfig() {
+            if (defaultChunksPerTick <= 0) {
+                throw new IllegalArgumentException("Chunks per tick must be positive");
+            }
+            if (blockCacheSize <= 0) {
+                throw new IllegalArgumentException("Cache size must be positive");
+            }
+        }
     }
 }

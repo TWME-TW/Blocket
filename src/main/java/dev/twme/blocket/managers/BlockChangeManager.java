@@ -5,7 +5,6 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +40,7 @@ import dev.twme.blocket.models.Stage;
 import dev.twme.blocket.models.View;
 import dev.twme.blocket.types.BlocketChunk;
 import dev.twme.blocket.types.BlocketPosition;
+import dev.twme.blocket.utils.LRUCache;
 import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import io.papermc.paper.math.Position;
 import lombok.Getter;
@@ -72,15 +72,29 @@ public class BlockChangeManager {
     private final BlocketAPI api;
     private final ConcurrentHashMap<UUID, BukkitTask> blockChangeTasks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<BlockData, Integer> blockDataToId = new ConcurrentHashMap<>();
-    private final ExecutorService executorService = Executors.newCachedThreadPool();
+    // 使用固定大小的線程池替代緩存線程池，避免創建過多線程
+    // 設置為守護線程，確保在插件關閉時能正確終止
+    private final ExecutorService executorService = Executors.newFixedThreadPool(
+        Runtime.getRuntime().availableProcessors() * 2,
+        r -> {
+            Thread t = new Thread(r, "Blocket-BlockChange-Worker");
+            t.setDaemon(true);
+            return t;
+        }
+    );
 
     // Per-player block changes: PlayerUUID -> (BlocketChunk -> (BlocketPosition -> BlockData))
     // This is updated incrementally as views are added/removed or blocks change.
+    // Using ConcurrentHashMap for thread-safe operations
     private final Map<UUID, Map<BlocketChunk, Map<BlocketPosition, BlockData>>> playerBlockChanges = new ConcurrentHashMap<>();
 
     // Track which blocks came from which view for each player:
     // PlayerUUID -> (ViewName -> (Chunk -> Positions))
+    // Using ConcurrentHashMap for thread-safe operations
     private final Map<UUID, Map<String, Map<BlocketChunk, Set<BlocketPosition>>>> playerViewBlocks = new ConcurrentHashMap<>();
+    
+    // LRU cache for block data
+    private final LRUCache<BlocketChunk, Map<BlocketPosition, BlockData>> blockDataCache;
 
     /**
      * Creates a new BlockChangeManager with the specified BlocketAPI instance.
@@ -90,6 +104,7 @@ public class BlockChangeManager {
      */
     public BlockChangeManager(BlocketAPI api) {
         this.api = api;
+        this.blockDataCache = new LRUCache<>(api.getConfig().getBlockCacheSize());
     }
 
     /**
@@ -106,10 +121,18 @@ public class BlockChangeManager {
     /**
      * Removes all tracking data for a player when they disconnect or leave a stage.
      * Cleans up memory by removing the player's block change cache and view tracking.
-     * 
+     *
      * @param player The player to remove tracking for
      */
     public void removePlayer(Player player) {
+        // Clear player's data from cache
+        Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerChanges = playerBlockChanges.get(player.getUniqueId());
+        if (playerChanges != null) {
+            for (BlocketChunk chunk : playerChanges.keySet()) {
+                blockDataCache.remove(chunk);
+            }
+        }
+        
         playerBlockChanges.remove(player.getUniqueId());
         playerViewBlocks.remove(player.getUniqueId());
     }
@@ -136,7 +159,7 @@ public class BlockChangeManager {
 
         if (playerCache == null || viewMap == null) return;
 
-        Map<BlocketChunk, Set<BlocketPosition>> viewBlockPositions = new HashMap<>();
+        Map<BlocketChunk, Set<BlocketPosition>> viewBlockPositions = new ConcurrentHashMap<>();
 
         // Merge view blocks into player cache
         for (Map.Entry<BlocketChunk, ConcurrentHashMap<BlocketPosition, BlockData>> chunkEntry : view.getBlocks().entrySet()) {
@@ -145,8 +168,11 @@ public class BlockChangeManager {
 
             for (Map.Entry<BlocketPosition, BlockData> posEntry : chunkEntry.getValue().entrySet()) {
                 chunkMap.put(posEntry.getKey(), posEntry.getValue());
-                viewBlockPositions.computeIfAbsent(chunk, c -> new HashSet<>()).add(posEntry.getKey());
+                viewBlockPositions.computeIfAbsent(chunk, c -> ConcurrentHashMap.newKeySet()).add(posEntry.getKey());
             }
+            
+            // Remove chunk from cache as it will be updated
+            blockDataCache.remove(chunk);
         }
 
         viewMap.put(view.getName(), viewBlockPositions);
@@ -177,6 +203,9 @@ public class BlockChangeManager {
                     playerCache.remove(chunkEntry.getKey());
                 }
             }
+            
+            // Remove chunk from cache as it will be updated
+            blockDataCache.remove(chunkEntry.getKey());
         }
     }
 
@@ -191,7 +220,10 @@ public class BlockChangeManager {
     public void applyBlockChange(Player player, BlocketChunk chunk, BlocketPosition pos, BlockData data, String viewName) {
         Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerCache = playerBlockChanges.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentHashMap<>());
         Map<BlocketPosition, BlockData> chunkMap = playerCache.computeIfAbsent(chunk, c -> new ConcurrentHashMap<>());
-        Map<String, Map<BlocketChunk, Set<BlocketPosition>>> viewMap = playerViewBlocks.computeIfAbsent(player.getUniqueId(), k -> new HashMap<>());
+        Map<String, Map<BlocketChunk, Set<BlocketPosition>>> viewMap = playerViewBlocks.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentHashMap<>());
+
+        // Remove chunk from cache as it will be updated
+        blockDataCache.remove(chunk);
 
         if (data == null) {
             // Remove block
@@ -221,8 +253,8 @@ public class BlockChangeManager {
             chunkMap.put(pos, data);
 
             if (viewName != null) {
-                viewMap.computeIfAbsent(viewName, k -> new HashMap<>())
-                        .computeIfAbsent(chunk, c -> new HashSet<>())
+                viewMap.computeIfAbsent(viewName, k -> new ConcurrentHashMap<>())
+                        .computeIfAbsent(chunk, c -> ConcurrentHashMap.newKeySet())
                         .add(pos);
             }
         }
@@ -241,7 +273,15 @@ public class BlockChangeManager {
 
         Map<BlocketChunk, Map<BlocketPosition, BlockData>> result = new HashMap<>();
         for (BlocketChunk chunk : chunks) {
-            Map<BlocketPosition, BlockData> data = changes.get(chunk);
+            // Try to get data from cache first
+            Map<BlocketPosition, BlockData> data = blockDataCache.get(chunk);
+            if (data == null) {
+                // If not in cache, get from player changes and put in cache
+                data = changes.get(chunk);
+                if (data != null && !data.isEmpty()) {
+                    blockDataCache.put(chunk, data);
+                }
+            }
             if (data != null && !data.isEmpty()) {
                 result.put(chunk, data);
             }
@@ -458,18 +498,37 @@ public class BlockChangeManager {
         }
     }
 
+    /**
+     * 關閉並清理所有資源
+     * 正確關閉 ExecutorService 並等待所有任務完成
+     * 添加了更完善的錯誤處理和資源清理機制
+     */
     public void shutdown() {
+        // 取消所有正在進行的任務
+        blockChangeTasks.values().forEach(BukkitTask::cancel);
+        blockChangeTasks.clear();
+        
+        // 關閉 ExecutorService
         executorService.shutdown();
         try {
-            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+            // 等待最多 30 秒讓現有任務完成
+            if (!executorService.awaitTermination(30, TimeUnit.SECONDS)) {
+                // 如果還有任務未完成，強制關閉
                 executorService.shutdownNow();
-                if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
-                    System.err.println("Executor service did not terminate");
+                // 再等待最多 10 秒確保關閉
+                if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
+                    System.err.println("BlockChangeManager executor service did not terminate properly");
                 }
             }
         } catch (InterruptedException e) {
+            // 如果等待過程中被中斷，強制關閉
             executorService.shutdownNow();
-            Thread.currentThread().interrupt();
+            Thread.currentThread().interrupt(); // 保持中斷狀態
         }
+        
+        // 清理其他資源
+        playerBlockChanges.clear();
+        playerViewBlocks.clear();
+        blockDataToId.clear();
     }
 }

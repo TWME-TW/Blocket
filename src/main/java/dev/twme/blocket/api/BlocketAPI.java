@@ -22,7 +22,7 @@ import lombok.Getter;
  */
 @Getter
 public class BlocketAPI {
-    private static BlocketAPI instance;
+    private static volatile BlocketAPI instance;
     
     private final Plugin ownerPlugin;
     private final StageManager stageManager;
@@ -77,11 +77,18 @@ public class BlocketAPI {
      */
     public static BlocketAPI initialize(Plugin plugin, BlocketConfig config) {
         if (instance != null) {
-            throw new IllegalStateException("BlocketAPI is already initialized by plugin: " + 
+            throw new IllegalStateException("BlocketAPI is already initialized by plugin: " +
                 instance.ownerPlugin.getName());
         }
         
-        instance = new BlocketAPI(plugin, config);
+        // Double-checked locking pattern for thread-safe singleton initialization
+        if (instance == null) {
+            synchronized (BlocketAPI.class) {
+                if (instance == null) {
+                    instance = new BlocketAPI(plugin, config);
+                }
+            }
+        }
         return instance;
     }
     
@@ -92,8 +99,13 @@ public class BlocketAPI {
      * @throws IllegalStateException if not initialized
      */
     public static BlocketAPI getInstance() {
+        // Double-checked locking pattern for thread-safe singleton access
         if (instance == null) {
-            throw new IllegalStateException("BlocketAPI is not initialized! Call initialize() first.");
+            synchronized (BlocketAPI.class) {
+                if (instance == null) {
+                    throw new IllegalStateException("BlocketAPI is not initialized! Call initialize() first.");
+                }
+            }
         }
         return instance;
     }
@@ -132,16 +144,19 @@ public class BlocketAPI {
     /**
      * Shutdown and cleanup all resources
      * This should be called in the plugin's onDisable() method
+     * 確保所有資源在插件關閉時正確釋放，包括線程池和其他管理器
      */
     public void shutdown() {
         ownerPlugin.getLogger().info("Shutting down Blocket API...");
         
         // Shutdown managers
+        // 關閉 BlockChangeManager，釋放其線程池和相關資源
         if (blockChangeManager != null) {
             blockChangeManager.shutdown();
         }
         
         // Unregister packet listeners
+        // 取消註冊所有包監聽器
         if (config.isEnablePacketListeners()) {
             if (blockDigAdapter != null) {
                 PacketEvents.getAPI().getEventManager().unregisterListener(blockDigAdapter);
@@ -155,6 +170,7 @@ public class BlocketAPI {
         }
         
         // Clear static instance
+        // 清理靜態實例
         instance = null;
         
         ownerPlugin.getLogger().info("Blocket API shutdown complete.");

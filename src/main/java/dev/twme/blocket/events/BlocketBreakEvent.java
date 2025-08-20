@@ -16,6 +16,14 @@ import lombok.Getter;
 /**
  * Event fired when a virtual block is broken by a player in a Blocket stage.
  * This event allows for custom handling of virtual block interactions and can be cancelled.
+ *
+ * <p>Event Naming Convention: Blocket[Action][Subject]Event for player interaction events
+ * or [Action][Subject]Event for system events. All events should follow a consistent
+ * asynchronous processing mechanism where appropriate.</p>
+ *
+ * <p>Asynchronous Processing: This event uses asynchronous processing (super(true)) to
+ * prevent blocking the main server thread when handling potentially time-consuming
+ * operations.</p>
  */
 public class BlocketBreakEvent extends Event implements Cancellable {
     private static final HandlerList HANDLERS = new HandlerList();

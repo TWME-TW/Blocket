@@ -1,9 +1,8 @@
 package dev.twme.blocket.managers;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -38,7 +37,7 @@ import lombok.Getter;
  */
 @Getter
 public class StageManager {
-    private final Map<String, Stage> stages;
+    private final ConcurrentHashMap<String, Stage> stages;
     private final BlocketAPI api;
 
     /**
@@ -47,7 +46,8 @@ public class StageManager {
      */
     public StageManager(BlocketAPI api) {
         this.api = api;
-        this.stages = new HashMap<>();
+        // Using ConcurrentHashMap for thread-safe operations
+        this.stages = new ConcurrentHashMap<>();
     }
 
     /**

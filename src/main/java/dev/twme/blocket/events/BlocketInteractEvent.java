@@ -16,10 +16,18 @@ import lombok.Getter;
  * Event fired when a player interacts with a virtual block in a Blocket stage.
  * This event is triggered before block breaking logic is applied, allowing
  * for custom interaction handling and cancellation.
- * 
+ *
  * <p>This event is cancellable. If cancelled, the interaction will be stopped
  * and no further block breaking logic will be processed.</p>
- * 
+ *
+ * <p>Event Naming Convention: Blocket[Action][Subject]Event for player interaction events
+ * or [Action][Subject]Event for system events. All events should follow a consistent
+ * asynchronous processing mechanism where appropriate.</p>
+ *
+ * <p>Asynchronous Processing: This event uses asynchronous processing (super(true)) to
+ * prevent blocking the main server thread when handling potentially time-consuming
+ * operations.</p>
+ *
  * @author TWME-TW
  * @version 1.0.0
  * @since 1.0.0
@@ -43,13 +51,23 @@ public class BlocketInteractEvent extends Event implements Cancellable {
      * @param view The view that the player is currently in.
      * @param stage The stage that the player is currently in.
      */
+    /**
+     * Event that is called when a player interacts with a block in a stage.
+     *
+     * @param player The player that interacted with the block.
+     * @param position The position of the block that was interacted with.
+     * @param blockData The block data of the block that was interacted with.
+     * @param view The view that the player is currently in.
+     * @param stage The stage that the player is currently in.
+     */
     public BlocketInteractEvent(Player player, BlocketPosition position, BlockData blockData, View view, Stage stage) {
-        this.player = player;
-        this.position = position;
-        this.blockData = blockData;
-        this.view = view;
-        this.stage = stage;
-    }
+       super(true); // 統一異步處理機制
+       this.player = player;
+       this.position = position;
+       this.blockData = blockData;
+       this.view = view;
+       this.stage = stage;
+   }
 
     @Override
     public boolean isCancelled() {

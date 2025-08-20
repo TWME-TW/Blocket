@@ -13,10 +13,18 @@ import lombok.Getter;
  * Event fired when a player physically exits a stage's boundaries.
  * This event is triggered by the StageBoundListener when it detects
  * that a player has moved out of a stage area.
- * 
+ *
  * <p>This event is cancellable. If cancelled, the player's movement
  * that would cause them to exit the stage will be blocked.</p>
- * 
+ *
+ * <p>Event Naming Convention: Blocket[Action][Subject]Event for player interaction events
+ * or [Action][Subject]Event for system events. All events should follow a consistent
+ * asynchronous processing mechanism where appropriate.</p>
+ *
+ * <p>Asynchronous Processing: This event uses asynchronous processing (super(true)) to
+ * prevent blocking the main server thread when handling potentially time-consuming
+ * operations.</p>
+ *
  * @author TWME-TW
  * @version 1.0.0
  * @since 1.0.0
@@ -34,10 +42,17 @@ public class PlayerExitStageEvent extends Event implements Cancellable {
      * @param stage  The stage the player exited.
      * @param player The player that exited the stage.
      */
+    /**
+     * Event that is called when a player exits a stage.
+     *
+     * @param stage  The stage the player exited.
+     * @param player The player that exited the stage.
+     */
     public PlayerExitStageEvent(Stage stage, Player player) {
-        this.stage = stage;
-        this.player = player;
-    }
+       super(true); // 統一異步處理機制
+       this.stage = stage;
+       this.player = player;
+   }
 
     @Override
     public @NotNull HandlerList getHandlers() {
