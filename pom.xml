@@ -37,6 +37,14 @@
                     <show>protected</show>
                     <show>package</show>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -102,8 +110,8 @@
 
     <distributionManagement>
         <repository>
-            <id>twme-repo-snapshots</id>
-            <url>https://repo.twme.dev/snapshots</url>
+            <id>twme-repo-releases</id>
+            <url>https://repo.twme.dev/releases</url>
         </repository>
     </distributionManagement>
 </project>
