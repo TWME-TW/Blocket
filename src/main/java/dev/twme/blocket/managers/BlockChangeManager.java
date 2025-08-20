@@ -1,7 +1,6 @@
 package dev.twme.blocket.managers;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
@@ -346,15 +345,14 @@ public class BlockChangeManager {
                 }
             }
 
-            byte[] fullLightSection = new byte[2048];
-            Arrays.fill(fullLightSection, (byte) 0xFF);
-            byte[][] fullLightArray = new byte[ySections][];
-            BitSet fullBitSet = new BitSet(ySections);
-            for (int i = 0; i < ySections; i++) {
-                fullLightArray[i] = fullLightSection;
-                fullBitSet.set(i);
-            }
+            // Use empty light data to let the client calculate lighting naturally
+            byte[][] emptyLightArray = new byte[ySections][];
             BitSet emptyBitSet = new BitSet(ySections);
+            for (int i = 0; i < ySections; i++) {
+                emptyLightArray[i] = new byte[2048]; // All zeros, no light data provided
+                emptyBitSet.set(i); // Mark as empty to let client handle lighting
+            }
+            BitSet fullBitSet = new BitSet(ySections); // Empty bit set
 
             for (int section = 0; section < ySections; section++) {
                 Chunk_v1_18 baseChunk = new Chunk_v1_18();
@@ -394,12 +392,12 @@ public class BlockChangeManager {
             }
 
             LightData lightData = new LightData();
-            lightData.setBlockLightArray(fullLightArray);
-            lightData.setSkyLightArray(fullLightArray);
-            lightData.setBlockLightCount(ySections);
-            lightData.setSkyLightCount(ySections);
-            lightData.setBlockLightMask(fullBitSet);
-            lightData.setSkyLightMask(fullBitSet);
+            lightData.setBlockLightArray(emptyLightArray);
+            lightData.setSkyLightArray(emptyLightArray);
+            lightData.setBlockLightCount(0); // No light data provided
+            lightData.setSkyLightCount(0); // No light data provided
+            lightData.setBlockLightMask(fullBitSet); // Empty mask
+            lightData.setSkyLightMask(fullBitSet); // Empty mask
             lightData.setEmptyBlockLightMask(emptyBitSet);
             lightData.setEmptySkyLightMask(emptyBitSet);
 
