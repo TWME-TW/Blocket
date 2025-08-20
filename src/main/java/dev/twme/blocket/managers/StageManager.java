@@ -27,7 +27,6 @@ import lombok.Getter;
  *   <li>Player-based stage queries</li>
  *   <li>Duplicate name prevention</li>
  * </ul>
- * </p>
  * 
  * <p>All stage operations are performed synchronously and thread-safely.
  * The manager automatically fires appropriate events when stages are
@@ -42,6 +41,10 @@ public class StageManager {
     private final Map<String, Stage> stages;
     private final BlocketAPI api;
 
+    /**
+     * Creates a new StageManager instance for managing virtual stages.
+     * @param api The BlocketAPI instance
+     */
     public StageManager(BlocketAPI api) {
         this.api = api;
         this.stages = new HashMap<>();
@@ -88,8 +91,9 @@ public class StageManager {
     }
 
     /**
-     * Get all stages
-     * @return List of stages
+     * Get all stages that a player is part of.
+     * @param player The player to get stages for
+     * @return List of stages the player belongs to
      */
     public List<Stage> getStages(Player player) {
         List<Stage> stages = new ArrayList<>();

@@ -1,20 +1,26 @@
 package dev.twme.blocket.types;
 
-import io.papermc.paper.math.BlockPosition;
-import io.papermc.paper.math.Position;
-import lombok.Getter;
-import lombok.Setter;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.util.Vector;
 
-import java.util.Set;
-import java.util.stream.Collectors;
+import io.papermc.paper.math.BlockPosition;
+import io.papermc.paper.math.Position;
+import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Setter
+/**
+ * Represents a position in 3D space for Blocket virtual blocks.
+ * This class provides utility methods for converting between different position formats
+ * and working with Minecraft's coordinate system.
+ */
 public class BlocketPosition {
     private int x, y, z;
 
@@ -35,6 +41,7 @@ public class BlocketPosition {
      * Create a new BlocketPosition
      *
      * @param location The location to create the BlocketPosition from
+     * @return A new BlocketPosition based on the given location
      */
     public static BlocketPosition fromLocation(Location location) {
         return new BlocketPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ());
@@ -44,6 +51,7 @@ public class BlocketPosition {
      * Create a new BlocketPosition
      *
      * @param vector The vector to create the BlocketPosition from
+     * @return A new BlocketPosition based on the given vector
      */
     public static BlocketPosition fromVector(Vector vector) {
         return new BlocketPosition(vector.getBlockX(), vector.getBlockY(), vector.getBlockZ());
@@ -53,6 +61,7 @@ public class BlocketPosition {
      * Creates new BlocketPositions
      *
      * @param locations The locations to create the BlocketPosition from
+     * @return A set of BlocketPositions based on the given locations
      */
     public static Set<BlocketPosition> fromLocations(Set<Location> locations) {
         return locations.stream().map(BlocketPosition::fromLocation).collect(Collectors.toSet());
@@ -62,6 +71,7 @@ public class BlocketPosition {
      * Creates new BlocketPositions
      *
      * @param blockPositions The block positions to create the BlocketPosition from
+     * @return A set of BlocketPositions based on the given block positions
      */
     public static Set<BlocketPosition> fromPositions(Set<BlockPosition> blockPositions) {
         return blockPositions.stream().map(BlocketPosition::fromPosition).collect(Collectors.toSet());
@@ -71,6 +81,7 @@ public class BlocketPosition {
      * Create a new BlocketPosition
      *
      * @param position The position to create the BlocketPosition from
+     * @return A new BlocketPosition based on the given position
      */
     public static BlocketPosition fromPosition(Position position) {
         return new BlocketPosition(position.blockX(), position.blockY(), position.blockZ());

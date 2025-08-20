@@ -41,7 +41,6 @@ import dev.twme.blocket.models.Stage;
  *   <li>Enter/exit event triggering</li>
  *   <li>Distance-based optimization to reduce processing</li>
  * </ul>
- * </p>
  * 
  * @author TWME-TW
  * @version 1.0.0
@@ -75,7 +74,6 @@ public class StageBoundListener implements Listener {
      *   <li>Fires PlayerExitStageEvent when leaving a stage</li>
      *   <li>Cancels movement if any event is cancelled</li>
      * </ul>
-     * </p>
      * 
      * @param event The PlayerMoveEvent containing movement information
      */

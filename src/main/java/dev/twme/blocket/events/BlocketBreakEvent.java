@@ -1,9 +1,5 @@
 package dev.twme.blocket.events;
 
-import dev.twme.blocket.models.Stage;
-import dev.twme.blocket.models.View;
-import dev.twme.blocket.types.BlocketPosition;
-import lombok.Getter;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
@@ -11,7 +7,16 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
+import dev.twme.blocket.models.Stage;
+import dev.twme.blocket.models.View;
+import dev.twme.blocket.types.BlocketPosition;
+import lombok.Getter;
+
 @Getter
+/**
+ * Event fired when a virtual block is broken by a player in a Blocket stage.
+ * This event allows for custom handling of virtual block interactions and can be cancelled.
+ */
 public class BlocketBreakEvent extends Event implements Cancellable {
     private static final HandlerList HANDLERS = new HandlerList();
     private boolean cancelled = false;
@@ -44,6 +49,10 @@ public class BlocketBreakEvent extends Event implements Cancellable {
         return HANDLERS;
     }
 
+    /**
+     * Gets the static HandlerList for this event type.
+     * @return The HandlerList for BlocketBreakEvent
+     */
     public static HandlerList getHandlerList() {
         return HANDLERS;
     }

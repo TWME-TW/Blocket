@@ -30,7 +30,6 @@ import dev.twme.blocket.types.BlocketPosition;
  *   <li>Outgoing block change packet filtering to prevent conflicts</li>
  *   <li>Multi-stage and multi-view block conflict resolution</li>
  * </ul>
- * </p>
  * 
  * <p>This adapter works in conjunction with BlockDigAdapter to provide
  * complete virtual block interaction management.</p>

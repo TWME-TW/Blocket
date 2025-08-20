@@ -25,7 +25,6 @@ import lombok.Setter;
  *   <li>Thread-safe random generation</li>
  *   <li>Equality comparison based on block distributions</li>
  * </ul>
- * </p>
  * 
  * <p>Example usage:</p>
  * <pre>{@code

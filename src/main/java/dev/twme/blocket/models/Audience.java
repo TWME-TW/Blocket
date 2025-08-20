@@ -28,7 +28,6 @@ import lombok.Setter;
  *   <li>Converting between Player objects and UUIDs</li>
  *   <li>Filtering online players from the audience</li>
  * </ul>
- * </p>
  * 
  * <p>Mining speeds allow for customized block breaking experiences where
  * different players can have different breaking speeds, enhancing gameplay
@@ -46,30 +45,38 @@ public class Audience {
     private final Map<UUID, Float> miningSpeeds;
 
     /**
-     * @param players The set of players
+     * Creates an Audience from a set of players with default visibility settings.
+     * @param players The set of players to include in the audience
+     * @return A new Audience containing the specified players
      */
     public static Audience fromPlayers(Set<Player> players) {
         return new Audience(players.stream().map(Player::getUniqueId).collect(Collectors.toSet()), false);
     }
 
     /**
-     * @param players The set of players
+     * Creates an Audience from a set of player UUIDs with default visibility settings.
+     * @param players The set of player UUIDs to include in the audience
+     * @return A new Audience containing the specified players
      */
     public static Audience fromUUIDs(Set<UUID> players) {
         return new Audience(players, false);
     }
 
     /**
-     * @param players The set of players
-     * @param arePlayersHidden Whether the players are hidden
+     * Creates an Audience from a set of players with specified visibility settings.
+     * @param players The set of players to include in the audience
+     * @param arePlayersHidden Whether the players should be hidden from view changes
+     * @return A new Audience containing the specified players with the given visibility settings
      */
     public static Audience fromPlayers(Set<Player> players, boolean arePlayersHidden) {
         return new Audience(players.stream().map(Player::getUniqueId).collect(Collectors.toSet()), arePlayersHidden);
     }
 
     /**
-     * @param players The set of players
-     * @param arePlayersHidden Whether the players are hidden
+     * Creates an Audience from a set of player UUIDs with specified visibility settings.
+     * @param players The set of player UUIDs to include in the audience
+     * @param arePlayersHidden Whether the players should be hidden from view changes
+     * @return A new Audience containing the specified players with the given visibility settings
      */
     public static Audience fromUUIDs(Set<UUID> players, boolean arePlayersHidden) {
         return new Audience(players, arePlayersHidden);
@@ -86,16 +93,18 @@ public class Audience {
     }
 
     /**
-     * @param player The player to add
-     * @return The set of uuids of players
+     * Adds a player to this audience and returns the updated set of player UUIDs.
+     * @param player The player to add to the audience
+     * @return The updated set of player UUIDs after adding the player
      */
     public Set<UUID> addPlayer(Player player) {
         return addPlayer(player.getUniqueId());
     }
 
     /**
-     * @param player The uuid of a player to add
-     * @return The set of uuids of players
+     * Adds a player to this audience by UUID and returns the updated set of player UUIDs.
+     * @param player The UUID of a player to add to the audience
+     * @return The updated set of player UUIDs after adding the player
      */
     public Set<UUID> addPlayer(UUID player) {
         players.add(player);
@@ -103,16 +112,18 @@ public class Audience {
     }
 
     /**
-     * @param player The player to remove
-     * @return The set of uuids of players
+     * Removes a player from this audience and returns the updated set of player UUIDs.
+     * @param player The player to remove from the audience
+     * @return The updated set of player UUIDs after removing the player
      */
     public Set<UUID> removePlayer(Player player) {
         return removePlayer(player.getUniqueId());
     }
 
     /**
-     * @param player The uuid of a player to remove
-     * @return The set of uuids of players
+     * Removes a player from this audience by UUID and returns the updated set of player UUIDs.
+     * @param player The UUID of a player to remove from the audience
+     * @return The updated set of player UUIDs after removing the player
      */
     public Set<UUID> removePlayer(UUID player) {
         players.remove(player);
@@ -120,6 +131,7 @@ public class Audience {
     }
 
     /**
+     * Gets all online players that are part of this audience.
      * @return A set of online players in the audience
      */
     public Set<Player> getOnlinePlayers() {

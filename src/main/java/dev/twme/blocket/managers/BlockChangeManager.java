@@ -63,7 +63,6 @@ import lombok.Getter;
  *   <li>Efficient memory management</li>
  *   <li>Incremental block updates</li>
  * </ul>
- * </p>
  * 
  * @author TWME-TW
  * @version 1.0.0
@@ -119,6 +118,8 @@ public class BlockChangeManager {
     /**
      * Hide a view from a player.
      * This removes the view's blocks from the player's cache and then sends updated blocks so the player no longer sees them.
+     * @param player The player to hide the view from
+     * @param view The view to hide from the player
      */
     public void hideView(Player player, View view) {
         removeViewFromPlayer(player, view);
@@ -127,6 +128,8 @@ public class BlockChangeManager {
 
     /**
      * Add a view's blocks to a player's cache in place.
+     * @param player The player to add the view to
+     * @param view The view to add to the player's cache
      */
     public void addViewToPlayer(Player player, View view) {
         Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerCache = playerBlockChanges.get(player.getUniqueId());
@@ -152,6 +155,8 @@ public class BlockChangeManager {
 
     /**
      * Remove a view's blocks from a player's cache in place.
+     * @param player The player to remove the view from
+     * @param view The view to remove from the player's cache
      */
     public void removeViewFromPlayer(Player player, View view) {
         Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerCache = playerBlockChanges.get(player.getUniqueId());
@@ -178,6 +183,11 @@ public class BlockChangeManager {
 
     /**
      * Apply a single block change for a player. If data is null, remove block.
+     * @param player The player to apply the block change for
+     * @param chunk The chunk containing the block
+     * @param pos The position of the block
+     * @param data The block data to apply, or null to remove the block
+     * @param viewName The name of the view this block change belongs to
      */
     public void applyBlockChange(Player player, BlocketChunk chunk, BlocketPosition pos, BlockData data, String viewName) {
         Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerCache = playerBlockChanges.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentHashMap<>());
@@ -240,10 +250,23 @@ public class BlockChangeManager {
         return result;
     }
 
+    /**
+     * Sends block changes for a stage to an audience without unloading.
+     * @param stage The stage containing the blocks to send
+     * @param audience The audience to send the block changes to
+     * @param chunks The chunks containing the blocks to send
+     */
     public void sendBlockChanges(Stage stage, Audience audience, Collection<BlocketChunk> chunks) {
         sendBlockChanges(stage, audience, chunks, false);
     }
 
+    /**
+     * Sends block changes for a stage to an audience with optional unloading.
+     * @param stage The stage containing the blocks to send
+     * @param audience The audience to send the block changes to
+     * @param chunks The chunks containing the blocks to send
+     * @param unload Whether to unload the chunks after sending
+     */
     public void sendBlockChanges(Stage stage, Audience audience, Collection<BlocketChunk> chunks, boolean unload) {
         for (Player player : audience.getOnlinePlayers()) {
             if (!player.isOnline() || player.getWorld() != stage.getWorld()) continue;
@@ -268,6 +291,11 @@ public class BlockChangeManager {
         }
     }
 
+    /**
+     * Sends multiple block changes to a single player.
+     * @param player The player to send block changes to
+     * @param blocks The set of block positions to send changes for
+     */
     public void sendMultiBlockChange(Player player, Set<BlocketPosition> blocks) {
         final Map<Position, BlockData> blocksToSend = new HashMap<>();
         for (BlocketPosition position : blocks) {
