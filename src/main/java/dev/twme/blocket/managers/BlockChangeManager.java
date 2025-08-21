@@ -1,5 +1,6 @@
 package dev.twme.blocket.managers;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
@@ -7,14 +8,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.block.data.BlockData;
@@ -45,27 +49,28 @@ import dev.twme.blocket.utils.ObjectPool;
 import dev.twme.blocket.utils.PerformanceMonitor;
 import io.papermc.paper.math.Position;
 import lombok.Getter;
+import lombok.NonNull;
 
 /**
  * Manages block changes and caching for virtual blocks across different players and views.
  * This manager handles the complex task of tracking which blocks each player should see,
  * managing view-specific block caches, and sending appropriate packet updates to clients.
- * 
+ *
  * <p>The BlockChangeManager maintains per-player block caches that combine blocks from
  * multiple views, handles incremental updates when views are added/removed, and optimizes
  * packet sending through chunk-based processing and asynchronous operations.</p>
- * 
+ *
  * <p>Key features include:
  * <ul>
  *   <li>Per-player block change caching</li>
- *   <li>View-aware block management</li>  
+ *   <li>View-aware block management</li>
  *   <li>Asynchronous chunk packet processing</li>
  *   <li>Efficient memory management</li>
  *   <li>Incremental block updates</li>
  * </ul>
- * 
+ *
  * @author TWME-TW
- * @version 1.0.0
+ * @version 1.0.1
  * @since 1.0.0
  */
 @Getter
@@ -73,74 +78,51 @@ public class BlockChangeManager {
     private final BlocketAPI api;
     private final ConcurrentHashMap<UUID, BukkitTask> blockChangeTasks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<BlockData, Integer> blockDataToId = new ConcurrentHashMap<>();
-    // Use a fixed-size thread pool to limit the number of concurrent tasks
-    // Set as daemon threads to ensure they terminate correctly when the plugin is disabled
-    private final ExecutorService executorService = Executors.newFixedThreadPool(
-        Runtime.getRuntime().availableProcessors() * 2,
-        r -> {
-            Thread t = new Thread(r, "Blocket-BlockChange-Worker");
-            t.setDaemon(true);
-            return t;
-        }
-    );
+    private final ExecutorService executorService;
 
-    // Per-player block changes: PlayerUUID -> (BlocketChunk -> (BlocketPosition -> BlockData))
-            /**
-             * 發送區塊封包給指定玩家。
-             *
-             * @param player 目標玩家
-             * @param chunk 目標區塊
-             * @param unload 是否為卸載操作
-             */
-    // Using ConcurrentHashMap for thread-safe operations
     private final Map<UUID, Map<BlocketChunk, Map<BlocketPosition, BlockData>>> playerBlockChanges = new ConcurrentHashMap<>();
-
-    // Track which blocks came from which view for each player:
-    // PlayerUUID -> (ViewName -> (Chunk -> Positions))
-    // Using ConcurrentHashMap for thread-safe operations
     private final Map<UUID, Map<String, Map<BlocketChunk, Set<BlocketPosition>>>> playerViewBlocks = new ConcurrentHashMap<>();
-    
-    // LRU cache for block data
     private final LRUCache<BlocketChunk, Map<BlocketPosition, BlockData>> blockDataCache;
-    
-    // 區塊處理器工廠，用於創建和處理區塊數據
-    private ChunkProcessorFactory chunkProcessorFactory;
-    
-    // 對象池，用於重用昂貴的對象
+    private final ChunkProcessorFactory chunkProcessorFactory;
     private final ObjectPool<Map<BlocketPosition, BlockData>> blockDataMapPool;
     private final ObjectPool<List<BaseChunk>> chunkListPool;
     private final ObjectPool<byte[]> lightDataArrayPool;
-    
-    // 性能監控器
     private final PerformanceMonitor performanceMonitor;
 
     /**
      * Creates a new BlockChangeManager with the specified BlocketAPI instance.
      * Initializes thread pools and data structures for managing block changes.
-     * 
+     *
      * @param api The BlocketAPI instance this manager belongs to
      */
     public BlockChangeManager(BlocketAPI api) {
         this.api = api;
         this.blockDataCache = new LRUCache<>(api.getConfig().getBlockCacheSize());
         this.chunkProcessorFactory = new ChunkProcessorFactory();
-        
-        // 初始化對象池
         this.blockDataMapPool = new ObjectPool<>(HashMap::new, 50);
         this.chunkListPool = new ObjectPool<>(ArrayList::new, 20);
         this.lightDataArrayPool = new ObjectPool<>(() -> new byte[2048], 100);
-        
-        // 初始化性能監控器
         this.performanceMonitor = new PerformanceMonitor();
+        this.executorService = new ThreadPoolExecutor(
+                0,
+                Runtime.getRuntime().availableProcessors() * 2,
+                60L, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(),
+                r -> {
+                    Thread t = new Thread(r, "Blocket-BlockChange-Worker");
+                    t.setDaemon(true);
+                    return t;
+                }
+        );
     }
 
     /**
      * Initializes block change tracking for a new player.
      * Creates empty data structures for the player's block changes and view tracking.
-     * 
+     *
      * @param player The player to initialize tracking for
      */
-    public void initializePlayer(Player player) {
+    public void initializePlayer(@NonNull Player player) {
         playerBlockChanges.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentHashMap<>());
         playerViewBlocks.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentHashMap<>());
     }
@@ -151,17 +133,13 @@ public class BlockChangeManager {
      *
      * @param player The player to remove tracking for
      */
-    public void removePlayer(Player player) {
-        // Clear player's data from cache
-        Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerChanges = playerBlockChanges.get(player.getUniqueId());
+    public void removePlayer(@NonNull Player player) {
+        UUID playerUUID = player.getUniqueId();
+        Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerChanges = playerBlockChanges.remove(playerUUID);
         if (playerChanges != null) {
-            for (BlocketChunk chunk : playerChanges.keySet()) {
-                blockDataCache.remove(chunk);
-            }
+            playerChanges.keySet().forEach(blockDataCache::remove);
         }
-        
-        playerBlockChanges.remove(player.getUniqueId());
-        playerViewBlocks.remove(player.getUniqueId());
+        playerViewBlocks.remove(playerUUID);
     }
 
     /**
@@ -170,7 +148,7 @@ public class BlockChangeManager {
      * @param player The player to hide the view from
      * @param view The view to hide from the player
      */
-    public void hideView(Player player, View view) {
+    public void hideView(@NonNull Player player, @NonNull View view) {
         removeViewFromPlayer(player, view);
         view.getStage().sendBlocksToAudience();
     }
@@ -180,27 +158,23 @@ public class BlockChangeManager {
      * @param player The player to add the view to
      * @param view The view to add to the player's cache
      */
-    public void addViewToPlayer(Player player, View view) {
-        Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerCache = playerBlockChanges.get(player.getUniqueId());
-        Map<String, Map<BlocketChunk, Set<BlocketPosition>>> viewMap = playerViewBlocks.get(player.getUniqueId());
+    public void addViewToPlayer(@NonNull Player player, @NonNull View view) {
+        UUID playerUUID = player.getUniqueId();
+        Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerCache = playerBlockChanges.get(playerUUID);
+        Map<String, Map<BlocketChunk, Set<BlocketPosition>>> viewMap = playerViewBlocks.get(playerUUID);
 
         if (playerCache == null || viewMap == null) return;
 
         Map<BlocketChunk, Set<BlocketPosition>> viewBlockPositions = new ConcurrentHashMap<>();
 
-        // Merge view blocks into player cache
-        for (Map.Entry<BlocketChunk, ConcurrentHashMap<BlocketPosition, BlockData>> chunkEntry : view.getBlocks().entrySet()) {
-            BlocketChunk chunk = chunkEntry.getKey();
+        view.getBlocks().forEach((chunk, chunkData) -> {
             Map<BlocketPosition, BlockData> chunkMap = playerCache.computeIfAbsent(chunk, c -> new ConcurrentHashMap<>());
-
-            for (Map.Entry<BlocketPosition, BlockData> posEntry : chunkEntry.getValue().entrySet()) {
-                chunkMap.put(posEntry.getKey(), posEntry.getValue());
-                viewBlockPositions.computeIfAbsent(chunk, c -> ConcurrentHashMap.newKeySet()).add(posEntry.getKey());
-            }
-            
-            // Remove chunk from cache as it will be updated
+            chunkData.forEach((pos, blockData) -> {
+                chunkMap.put(pos, blockData);
+                viewBlockPositions.computeIfAbsent(chunk, c -> ConcurrentHashMap.newKeySet()).add(pos);
+            });
             blockDataCache.remove(chunk);
-        }
+        });
 
         viewMap.put(view.getName(), viewBlockPositions);
     }
@@ -210,30 +184,26 @@ public class BlockChangeManager {
      * @param player The player to remove the view from
      * @param view The view to remove from the player's cache
      */
-    public void removeViewFromPlayer(Player player, View view) {
-        Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerCache = playerBlockChanges.get(player.getUniqueId());
-        Map<String, Map<BlocketChunk, Set<BlocketPosition>>> viewMap = playerViewBlocks.get(player.getUniqueId());
+    public void removeViewFromPlayer(@NonNull Player player, @NonNull View view) {
+        UUID playerUUID = player.getUniqueId();
+        Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerCache = playerBlockChanges.get(playerUUID);
+        Map<String, Map<BlocketChunk, Set<BlocketPosition>>> viewMap = playerViewBlocks.get(playerUUID);
 
         if (playerCache == null || viewMap == null) return;
 
         Map<BlocketChunk, Set<BlocketPosition>> viewBlocks = viewMap.remove(view.getName());
         if (viewBlocks == null) return;
 
-        // Remove only the blocks associated with this view
-        for (Map.Entry<BlocketChunk, Set<BlocketPosition>> chunkEntry : viewBlocks.entrySet()) {
-            Map<BlocketPosition, BlockData> chunkMap = playerCache.get(chunkEntry.getKey());
+        viewBlocks.forEach((chunk, positions) -> {
+            Map<BlocketPosition, BlockData> chunkMap = playerCache.get(chunk);
             if (chunkMap != null) {
-                for (BlocketPosition pos : chunkEntry.getValue()) {
-                    chunkMap.remove(pos);
-                }
+                positions.forEach(chunkMap::remove);
                 if (chunkMap.isEmpty()) {
-                    playerCache.remove(chunkEntry.getKey());
+                    playerCache.remove(chunk);
                 }
             }
-            
-            // Remove chunk from cache as it will be updated
-            blockDataCache.remove(chunkEntry.getKey());
-        }
+            blockDataCache.remove(chunk);
+        });
     }
 
     /**
@@ -244,27 +214,23 @@ public class BlockChangeManager {
      * @param data The block data to apply, or null to remove the block
      * @param viewName The name of the view this block change belongs to
      */
-    public void applyBlockChange(Player player, BlocketChunk chunk, BlocketPosition pos, BlockData data, String viewName) {
-        Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerCache = playerBlockChanges.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentHashMap<>());
+    public void applyBlockChange(@NonNull Player player, @NonNull BlocketChunk chunk, @NonNull BlocketPosition pos, BlockData data, String viewName) {
+        UUID playerUUID = player.getUniqueId();
+        Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerCache = playerBlockChanges.computeIfAbsent(playerUUID, k -> new ConcurrentHashMap<>());
         Map<BlocketPosition, BlockData> chunkMap = playerCache.computeIfAbsent(chunk, c -> new ConcurrentHashMap<>());
-        Map<String, Map<BlocketChunk, Set<BlocketPosition>>> viewMap = playerViewBlocks.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentHashMap<>());
+        Map<String, Map<BlocketChunk, Set<BlocketPosition>>> viewMap = playerViewBlocks.computeIfAbsent(playerUUID, k -> new ConcurrentHashMap<>());
 
-        // Remove chunk from cache as it will be updated
         blockDataCache.remove(chunk);
 
         if (data == null) {
-            // Remove block
             chunkMap.remove(pos);
             if (chunkMap.isEmpty()) {
                 playerCache.remove(chunk);
             }
 
-            // Also remove from the associated view if known
             if (viewName != null) {
-                Map<BlocketChunk, Set<BlocketPosition>> viewChunks = viewMap.get(viewName);
-                if (viewChunks != null) {
-                    Set<BlocketPosition> positions = viewChunks.get(chunk);
-                    if (positions != null) {
+                Optional.ofNullable(viewMap.get(viewName)).ifPresent(viewChunks -> {
+                    Optional.ofNullable(viewChunks.get(chunk)).ifPresent(positions -> {
                         positions.remove(pos);
                         if (positions.isEmpty()) {
                             viewChunks.remove(chunk);
@@ -272,13 +238,11 @@ public class BlockChangeManager {
                                 viewMap.remove(viewName);
                             }
                         }
-                    }
-                }
+                    });
+                });
             }
         } else {
-            // Add or update block
             chunkMap.put(pos, data);
-
             if (viewName != null) {
                 viewMap.computeIfAbsent(viewName, k -> new ConcurrentHashMap<>())
                         .computeIfAbsent(chunk, c -> ConcurrentHashMap.newKeySet())
@@ -290,30 +254,25 @@ public class BlockChangeManager {
     /**
      * Retrieve block changes for a player filtered by requested chunks.
      */
-    private Map<BlocketChunk, Map<BlocketPosition, BlockData>> getBlockChangesForPlayer(Player player, Collection<BlocketChunk> chunks) {
+    private Map<BlocketChunk, Map<BlocketPosition, BlockData>> getBlockChangesForPlayer(@NonNull Player player, @NonNull Collection<BlocketChunk> chunks) {
         Map<BlocketChunk, Map<BlocketPosition, BlockData>> changes = playerBlockChanges.get(player.getUniqueId());
-        if (changes == null || changes.isEmpty()) {
+        if (changes == null || changes.isEmpty() || chunks.isEmpty()) {
             return Collections.emptyMap();
         }
 
-        if (chunks.isEmpty()) return Collections.emptyMap();
-
-        Map<BlocketChunk, Map<BlocketPosition, BlockData>> result = new HashMap<>();
-        for (BlocketChunk chunk : chunks) {
-            // Try to get data from cache first
-            Map<BlocketPosition, BlockData> data = blockDataCache.get(chunk);
-            if (data == null) {
-                // If not in cache, get from player changes and put in cache
-                data = changes.get(chunk);
-                if (data != null && !data.isEmpty()) {
-                    blockDataCache.put(chunk, data);
-                }
-            }
-            if (data != null && !data.isEmpty()) {
-                result.put(chunk, data);
-            }
-        }
-        return result;
+        return chunks.stream()
+                .map(chunk -> {
+                    Map<BlocketPosition, BlockData> data = blockDataCache.get(chunk);
+                    if (data == null) {
+                        data = changes.get(chunk);
+                        if (data != null && !data.isEmpty()) {
+                            blockDataCache.put(chunk, data);
+                        }
+                    }
+                    return data != null && !data.isEmpty() ? new AbstractMap.SimpleEntry<>(chunk, data) : null;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     /**
@@ -322,7 +281,7 @@ public class BlockChangeManager {
      * @param audience The audience to send the block changes to
      * @param chunks The chunks containing the blocks to send
      */
-    public void sendBlockChanges(Stage stage, Audience audience, Collection<BlocketChunk> chunks) {
+    public void sendBlockChanges(@NonNull Stage stage, @NonNull Audience audience, @NonNull Collection<BlocketChunk> chunks) {
         sendBlockChanges(stage, audience, chunks, false);
     }
 
@@ -333,28 +292,26 @@ public class BlockChangeManager {
      * @param chunks The chunks containing the blocks to send
      * @param unload Whether to unload the chunks after sending
      */
-    public void sendBlockChanges(Stage stage, Audience audience, Collection<BlocketChunk> chunks, boolean unload) {
-        for (Player player : audience.getOnlinePlayers()) {
-            if (!player.isOnline() || player.getWorld() != stage.getWorld()) continue;
+    public void sendBlockChanges(@NonNull Stage stage, @NonNull Audience audience, @NonNull Collection<BlocketChunk> chunks, boolean unload) {
+        List<BlocketChunk> chunkList = new ArrayList<>(chunks);
+        audience.getOnlinePlayers().stream()
+                .filter(player -> player.isOnline() && player.getWorld().equals(stage.getWorld()))
+                .forEach(player -> {
+                    Map<BlocketChunk, Map<BlocketPosition, BlockData>> blockChanges = getBlockChangesForPlayer(player, chunks);
+                    Bukkit.getScheduler().runTask(api.getOwnerPlugin(), () -> new OnBlockChangeSendEvent(stage, blockChanges).callEvent());
 
-            Map<BlocketChunk, Map<BlocketPosition, BlockData>> blockChanges = getBlockChangesForPlayer(player, chunks);
-            Bukkit.getScheduler().runTask(api.getOwnerPlugin(), () -> new OnBlockChangeSendEvent(stage, blockChanges).callEvent());
-
-            AtomicInteger chunkIndex = new AtomicInteger(0);
-            List<BlocketChunk> chunkList = new ArrayList<>(chunks);
-
-            BukkitTask task = Bukkit.getScheduler().runTaskTimer(api.getOwnerPlugin(), () -> {
-                if (chunkIndex.get() >= chunkList.size()) {
-                    cancelTask(player.getUniqueId());
-                    return;
-                }
-                for (int i = 0; i < stage.getChunksPerTick() && chunkIndex.get() < chunkList.size(); i++) {
-                    sendChunkPacket(player, chunkList.get(chunkIndex.getAndIncrement()), unload);
-                }
-            }, 0L, 1L);
-
-            blockChangeTasks.put(player.getUniqueId(), task);
-        }
+                    AtomicInteger chunkIndex = new AtomicInteger(0);
+                    BukkitTask task = Bukkit.getScheduler().runTaskTimer(api.getOwnerPlugin(), () -> {
+                        if (chunkIndex.get() >= chunkList.size()) {
+                            cancelTask(player.getUniqueId());
+                            return;
+                        }
+                        for (int i = 0; i < stage.getChunksPerTick() && chunkIndex.get() < chunkList.size(); i++) {
+                            sendChunkPacket(player, chunkList.get(chunkIndex.getAndIncrement()), unload);
+                        }
+                    }, 0L, 1L);
+                    blockChangeTasks.put(player.getUniqueId(), task);
+                });
     }
 
     /**
@@ -362,21 +319,33 @@ public class BlockChangeManager {
      * @param player The player to send block changes to
      * @param blocks The set of block positions to send changes for
      */
-    public void sendMultiBlockChange(Player player, Set<BlocketPosition> blocks) {
-        final Map<Position, BlockData> blocksToSend = new HashMap<>();
-        for (BlocketPosition position : blocks) {
-            BlockData blockData = playerBlockChanges.get(player.getUniqueId()).get(position.toBlocketChunk()).get(position);
-            if (blockData == null) continue;
-            blocksToSend.put(position.toPosition(), blockData);
+    public void sendMultiBlockChange(@NonNull Player player, @NonNull Set<BlocketPosition> blocks) {
+        Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerChanges = playerBlockChanges.get(player.getUniqueId());
+        if (playerChanges == null) return;
+
+        final Map<Position, BlockData> blocksToSend = blocks.stream()
+                .map(pos -> {
+                    Map<BlocketPosition, BlockData> chunkData = playerChanges.get(pos.toBlocketChunk());
+                    if (chunkData != null) {
+                        BlockData blockData = chunkData.get(pos);
+                        if (blockData != null) {
+                            return new AbstractMap.SimpleEntry<>(pos.toPosition(), blockData);
+                        }
+                    }
+                    return null;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        if (!blocksToSend.isEmpty()) {
+            player.sendMultiBlockChange(blocksToSend);
         }
-        player.sendMultiBlockChange(blocksToSend);
     }
 
     private void cancelTask(UUID playerId) {
         Optional.ofNullable(blockChangeTasks.remove(playerId)).ifPresent(BukkitTask::cancel);
     }
-    
-    
+
     /**
      * Sends a chunk packet to the specified player.
      *
@@ -384,32 +353,23 @@ public class BlockChangeManager {
      * @param chunk The chunk to be sent
      * @param unload Whether this is an unload operation
      */
-    public void sendChunkPacket(Player player, BlocketChunk chunk, boolean unload) {
+    public void sendChunkPacket(@NonNull Player player, @NonNull BlocketChunk chunk, boolean unload) {
         executorService.submit(() -> processAndSendChunk(player, chunk, unload));
     }
 
     /**
-     * 處理並發送區塊數據包
-     * 重構後的主方法，將複雜邏輯拆分為多個小方法
+     * Processes and sends a chunk packet.
      *
-     * @param player 目標玩家
-     * @param chunk 要處理的區塊
-     * @param unload 是否為卸載操作
+     * @param player The target player
+     * @param chunk The chunk to process
+     * @param unload Whether this is an unload operation
      */
     private void processAndSendChunk(Player player, BlocketChunk chunk, boolean unload) {
         try (PerformanceMonitor.Timer timer = performanceMonitor.startTimer("processAndSendChunk")) {
-            // 驗證輸入參數
             validateChunkProcessingInputs(player, chunk);
-            
-            // 獲取基本信息
             ChunkProcessingContext context = createProcessingContext(player, chunk, unload);
-            
-            // 創建區塊數據包
             ChunkPacketData packetData = createChunkPacketData(context);
-            
-            // 發送數據包
             sendChunkPackets(context.getPacketUser(), chunk, packetData);
-            
         } catch (ChunkProcessingException e) {
             performanceMonitor.incrementCounter("chunkProcessingErrors");
             handleChunkProcessingError(player, chunk, e);
@@ -418,133 +378,95 @@ public class BlockChangeManager {
             handleUnexpectedError(player, chunk, e);
         }
     }
-    
+
     /**
-     * 驗證區塊處理的輸入參數
+     * Validates the inputs for chunk processing.
      *
-     * @param player 玩家
-     * @param chunk 區塊
-     * @throws ChunkProcessingException 當參數無效時拋出
+     * @param player The player
+     * @param chunk The chunk
+     * @throws ChunkProcessingException if inputs are invalid
      */
     private void validateChunkProcessingInputs(Player player, BlocketChunk chunk) throws ChunkProcessingException {
-        if (player == null) {
-            throw new ChunkProcessingException("玩家不能為null");
+        if (player == null || !player.isOnline() || player.getWorld() == null) {
+            throw new ChunkProcessingException("Player is invalid or offline.");
         }
         if (chunk == null) {
-            throw new ChunkProcessingException("區塊不能為null");
-        }
-        if (!player.isOnline()) {
-            throw new ChunkProcessingException("玩家必須在線上");
-        }
-        if (player.getWorld() == null) {
-            throw new ChunkProcessingException("玩家世界不能為null");
+            throw new ChunkProcessingException("Chunk cannot be null.");
         }
     }
-    
+
     /**
-     * 創建區塊處理上下文
+     * Creates a chunk processing context.
      *
-     * @param player 玩家
-     * @param chunk 區塊
-     * @param unload 是否為卸載操作
-     * @return 處理上下文
-     * @throws ChunkProcessingException 當創建上下文失敗時拋出
+     * @param player The player
+     * @param chunk The chunk
+     * @param unload Whether to unload
+     * @return The processing context
+     * @throws ChunkProcessingException if context creation fails
      */
-    private ChunkProcessingContext createProcessingContext(Player player, BlocketChunk chunk, boolean unload)
-            throws ChunkProcessingException {
+    private ChunkProcessingContext createProcessingContext(Player player, BlocketChunk chunk, boolean unload) throws ChunkProcessingException {
         try {
             User packetUser = PacketEvents.getAPI().getPlayerManager().getUser(player);
             if (packetUser == null) {
-                throw new ChunkProcessingException("無法獲取玩家的PacketUser");
+                throw new ChunkProcessingException("Failed to get PacketUser for player.");
             }
-            
-            Map<BlocketPosition, BlockData> customBlockData = null;
-            if (!unload) {
-                customBlockData = getBlockChangesForPlayer(player, Collections.singleton(chunk)).get(chunk);
-            }
-            
+            Map<BlocketPosition, BlockData> customBlockData = unload ? null : getBlockChangesForPlayer(player, Collections.singleton(chunk)).get(chunk);
             return new ChunkProcessingContext(player, chunk, packetUser, customBlockData, unload);
-            
         } catch (Exception e) {
-            throw new ChunkProcessingException("創建處理上下文時發生錯誤", e);
+            throw new ChunkProcessingException("Error creating processing context.", e);
         }
     }
-    
+
     /**
-     * 創建區塊數據包數據
+     * Creates chunk packet data.
      *
-     * @param context 處理上下文
-     * @return 區塊數據包數據
-     * @throws ChunkProcessingException 當創建數據包失敗時拋出
+     * @param context The processing context
+     * @return The chunk packet data
+     * @throws ChunkProcessingException if packet data creation fails
      */
     private ChunkPacketData createChunkPacketData(ChunkProcessingContext context) throws ChunkProcessingException {
         try (PerformanceMonitor.Timer timer = performanceMonitor.startTimer("createChunkPacketData")) {
-            // 對於卸載操作，創建簡單的空區塊數據
             if (context.isUnload()) {
                 performanceMonitor.incrementCounter("emptyChunkPackets");
                 return createEmptyChunkPacketData(context);
             }
-            
-            // 創建處理選項
-            ChunkProcessorFactory.ChunkProcessingOptions options =
-                new ChunkProcessorFactory.ChunkProcessingOptions(context.getPacketUser())
-                    .useEmptyLighting(true); // 使用空光照讓客戶端自行計算
-            
-            // 創建區塊Column
-            Column column = chunkProcessorFactory.createChunkColumn(
-                context.getPlayer(),
-                context.getChunk(),
-                context.getCustomBlockData(),
-                options
-            );
-            
-            // 創建光照數據（空光照）
+
+            ChunkProcessorFactory.ChunkProcessingOptions options = new ChunkProcessorFactory.ChunkProcessingOptions(context.getPacketUser()).useEmptyLighting(true);
+            Column column = chunkProcessorFactory.createChunkColumn(context.getPlayer(), context.getChunk(), context.getCustomBlockData(), options);
             LightData lightData = createEmptyLightData(context);
-            
+
             performanceMonitor.incrementCounter("fullChunkPackets");
             return new ChunkPacketData(column, lightData);
-            
         } catch (Exception e) {
-            throw new ChunkProcessingException("創建區塊數據包數據時發生錯誤", e);
+            throw new ChunkProcessingException("Error creating chunk packet data.", e);
         }
     }
-    
+
     /**
-     * 創建空的區塊數據包數據（用於卸載操作）
+     * Creates empty chunk packet data for unload operations.
      *
-     * @param context 處理上下文
-     * @return 空的區塊數據包數據
+     * @param context The processing context
+     * @return Empty chunk packet data
      */
     private ChunkPacketData createEmptyChunkPacketData(ChunkProcessingContext context) {
-        // 創建空的Column和LightData
         BaseChunk[] emptyChunks = new BaseChunk[0];
         Column emptyColumn = new Column(context.getChunk().x(), context.getChunk().z(), true, emptyChunks, null);
         LightData emptyLightData = createEmptyLightData(context);
-        
         return new ChunkPacketData(emptyColumn, emptyLightData);
     }
-    
+
     /**
-     * 創建空光照數據（讓客戶端自行計算光照）
+     * Creates empty light data to let the client handle lighting.
      *
-     * @param context 處理上下文
-     * @return 空光照數據
+     * @param context The processing context
+     * @return Empty light data
      */
     private LightData createEmptyLightData(ChunkProcessingContext context) {
         int ySections = context.getPacketUser().getTotalWorldHeight() >> 4;
-        
-        // 創建空光照陣列
-        byte[][] emptyLightArray = new byte[ySections][];
-        for (int i = 0; i < ySections; i++) {
-            emptyLightArray[i] = new byte[2048]; // 全部為0
-        }
-        
-        // 創建空遮罩
+        byte[][] emptyLightArray = new byte[ySections][2048];
         BitSet emptyBitSet = new BitSet(ySections);
-        for (int i = 0; i < ySections; i++) {
-            emptyBitSet.set(i); // 標記為空，讓客戶端處理光照
-        }
-        
+        emptyBitSet.set(0, ySections);
+
         LightData lightData = new LightData();
         lightData.setBlockLightArray(emptyLightArray);
         lightData.setSkyLightArray(emptyLightArray);
@@ -554,139 +476,108 @@ public class BlockChangeManager {
         lightData.setSkyLightMask(new BitSet(ySections));
         lightData.setEmptyBlockLightMask(emptyBitSet);
         lightData.setEmptySkyLightMask(emptyBitSet);
-        
         return lightData;
     }
-    
+
     /**
-     * 發送區塊數據包
+     * Sends chunk packets to the user.
      *
-     * @param packetUser 數據包用戶
-     * @param chunk 區塊
-     * @param packetData 數據包數據
+     * @param packetUser The packet user
+     * @param chunk The chunk
+     * @param packetData The packet data
      */
     private void sendChunkPackets(User packetUser, BlocketChunk chunk, ChunkPacketData packetData) {
-        // 先發送卸載數據包
         WrapperPlayServerUnloadChunk unloadPacket = new WrapperPlayServerUnloadChunk(chunk.x(), chunk.z());
         packetUser.sendPacketSilently(unloadPacket);
-        
-        // 再發送區塊數據包
-        WrapperPlayServerChunkData chunkDataPacket = new WrapperPlayServerChunkData(
-            packetData.getColumn(),
-            packetData.getLightData()
-        );
+        WrapperPlayServerChunkData chunkDataPacket = new WrapperPlayServerChunkData(packetData.getColumn(), packetData.getLightData());
         packetUser.sendPacketSilently(chunkDataPacket);
     }
-    
+
     /**
-     * 處理區塊處理異常
+     * Handles chunk processing errors.
      *
-     * @param player 玩家
-     * @param chunk 區塊
-     * @param e 異常
+     * @param player The player
+     * @param chunk The chunk
+     * @param e The exception
      */
     private void handleChunkProcessingError(Player player, BlocketChunk chunk, ChunkProcessingException e) {
-        String errorMessage = String.format(
-            "處理區塊時發生錯誤 - 玩家: %s, 區塊: (%d, %d), 錯誤: %s",
-            player.getName(), chunk.x(), chunk.z(), e.getMessage()
-        );
-        
-        // 記錄詳細錯誤信息
+        String errorMessage = String.format("Error processing chunk for player: %s, chunk: (%d, %d), error: %s", player.getName(), chunk.x(), chunk.z(), e.getMessage());
         api.getOwnerPlugin().getLogger().warning(errorMessage);
         if (e.getCause() != null) {
-            api.getOwnerPlugin().getLogger().warning("原因: " + e.getCause().getMessage());
+            api.getOwnerPlugin().getLogger().warning("Caused by: " + e.getCause().getMessage());
         }
-        
-        // 可以選擇通知玩家或進行其他恢復操作
-        // player.sendMessage("區塊載入時發生錯誤，請稍後再試");
     }
-    
+
     /**
-     * 處理意外錯誤
+     * Handles unexpected errors during chunk processing.
      *
-     * @param player 玩家
-     * @param chunk 區塊
-     * @param e 異常
+     * @param player The player
+     * @param chunk The chunk
+     * @param e The exception
      */
     private void handleUnexpectedError(Player player, BlocketChunk chunk, Exception e) {
-        String errorMessage = String.format(
-            "處理區塊時發生意外錯誤 - 玩家: %s, 區塊: (%d, %d)",
-            player.getName(), chunk.x(), chunk.z()
-        );
-        
-        api.getOwnerPlugin().getLogger().severe(errorMessage);
-        e.printStackTrace();
+        String errorMessage = String.format("Unexpected error processing chunk for player: %s, chunk: (%d, %d)", player.getName(), chunk.x(), chunk.z());
+        api.getOwnerPlugin().getLogger().log(java.util.logging.Level.SEVERE, errorMessage, e);
     }
-    
+
     /**
-     * 獲取性能監控器
+     * Gets the performance monitor.
      *
-     * @return 性能監控器實例
+     * @return The performance monitor instance
      */
     public PerformanceMonitor getPerformanceMonitor() {
         return performanceMonitor;
     }
-    
+
     /**
-     * 獲取性能統計報告
+     * Gets the performance statistics report.
      *
-     * @return 性能統計報告字符串
+     * @return The performance report string
      */
     public String getPerformanceReport() {
         return performanceMonitor.generateReport();
     }
-    
+
     /**
-     * 重置性能統計
+     * Resets the performance statistics.
      */
     public void resetPerformanceStats() {
         performanceMonitor.resetAll();
     }
 
     /**
-     * 關閉並清理所有資源
-     * 正確關閉 ExecutorService 並等待所有任務完成
-     * 添加了更完善的錯誤處理和資源清理機制
+     * Shuts down and cleans up all resources.
      */
     public void shutdown() {
-        // 取消所有正在進行的任務
         blockChangeTasks.values().forEach(BukkitTask::cancel);
         blockChangeTasks.clear();
-        
-        // 關閉 ExecutorService
+
         executorService.shutdown();
         try {
-            // 等待最多 30 秒讓現有任務完成
             if (!executorService.awaitTermination(30, TimeUnit.SECONDS)) {
-                // 如果還有任務未完成，強制關閉
                 executorService.shutdownNow();
-                // 再等待最多 10 秒確保關閉
                 if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
-                    System.err.println("BlockChangeManager executor service did not terminate properly");
+                    System.err.println("BlockChangeManager executor service did not terminate properly.");
                 }
             }
         } catch (InterruptedException e) {
-            // 如果等待過程中被中斷，強制關閉
             executorService.shutdownNow();
-            Thread.currentThread().interrupt(); // 保持中斷狀態
+            Thread.currentThread().interrupt();
         }
-        
-        // 清理其他資源
+
         playerBlockChanges.clear();
         playerViewBlocks.clear();
         blockDataToId.clear();
-        
-        // 清理對象池
+
         if (chunkProcessorFactory != null) {
             chunkProcessorFactory.clearCaches();
         }
         blockDataMapPool.clear();
         chunkListPool.clear();
         lightDataArrayPool.clear();
-        
-        // 輸出性能報告
+
         if (api.getOwnerPlugin().getLogger() != null) {
-            api.getOwnerPlugin().getLogger().info("BlockChangeManager 性能統計:\n" + performanceMonitor.generateReport());
+            api.getOwnerPlugin().getLogger().info("BlockChangeManager Performance Stats:\n" + performanceMonitor.generateReport());
         }
     }
 }

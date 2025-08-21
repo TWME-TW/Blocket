@@ -1,12 +1,10 @@
 package dev.twme.blocket.models;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.bukkit.entity.Player;
@@ -19,7 +17,7 @@ import lombok.Setter;
  * Represents a collection of players that can view virtual blocks in stages.
  * An audience manages player membership, visibility settings, and individual
  * player mining speeds for enhanced block breaking experiences.
- * 
+ *
  * <p>The Audience class provides functionality for:
  * <ul>
  *   <li>Managing player membership with UUID-based tracking</li>
@@ -28,13 +26,13 @@ import lombok.Setter;
  *   <li>Converting between Player objects and UUIDs</li>
  *   <li>Filtering online players from the audience</li>
  * </ul>
- * 
+ *
  * <p>Mining speeds allow for customized block breaking experiences where
  * different players can have different breaking speeds, enhancing gameplay
  * mechanics like mining boosts or penalties.</p>
- * 
+ *
  * @author TWME-TW
- * @version 1.0.0
+ * @version 1.0.1
  * @since 1.0.0
  */
 @Setter
@@ -87,47 +85,42 @@ public class Audience {
      * @param arePlayersHidden Whether the players are hidden
      */
     private Audience(Set<UUID> players, boolean arePlayersHidden) {
-        this.players = players;
+        this.players = ConcurrentHashMap.newKeySet();
+        this.players.addAll(players);
         this.arePlayersHidden = arePlayersHidden;
-        this.miningSpeeds = new HashMap<>();
+        this.miningSpeeds = new ConcurrentHashMap<>();
     }
 
     /**
-     * Adds a player to this audience and returns the updated set of player UUIDs.
+     * Adds a player to this audience.
      * @param player The player to add to the audience
-     * @return The updated set of player UUIDs after adding the player
      */
-    public Set<UUID> addPlayer(Player player) {
-        return addPlayer(player.getUniqueId());
+    public void addPlayer(Player player) {
+        addPlayer(player.getUniqueId());
     }
 
     /**
-     * Adds a player to this audience by UUID and returns the updated set of player UUIDs.
+     * Adds a player to this audience by UUID.
      * @param player The UUID of a player to add to the audience
-     * @return The updated set of player UUIDs after adding the player
      */
-    public Set<UUID> addPlayer(UUID player) {
+    public void addPlayer(UUID player) {
         players.add(player);
-        return players;
     }
 
     /**
-     * Removes a player from this audience and returns the updated set of player UUIDs.
+     * Removes a player from this audience.
      * @param player The player to remove from the audience
-     * @return The updated set of player UUIDs after removing the player
      */
-    public Set<UUID> removePlayer(Player player) {
-        return removePlayer(player.getUniqueId());
+    public void removePlayer(Player player) {
+        removePlayer(player.getUniqueId());
     }
 
     /**
-     * Removes a player from this audience by UUID and returns the updated set of player UUIDs.
+     * Removes a player from this audience by UUID.
      * @param player The UUID of a player to remove from the audience
-     * @return The updated set of player UUIDs after removing the player
      */
-    public Set<UUID> removePlayer(UUID player) {
+    public void removePlayer(UUID player) {
         players.remove(player);
-        return players;
     }
 
     /**
@@ -135,14 +128,10 @@ public class Audience {
      * @return A set of online players in the audience
      */
     public Set<Player> getOnlinePlayers() {
-        List<Player> onlinePlayers = new ArrayList<>();
-        for (UUID player : players) {
-            Player p = BlocketAPI.getInstance().getOwnerPlugin().getServer().getPlayer(player);
-            if (p != null) {
-                onlinePlayers.add(p);
-            }
-        }
-        return new HashSet<>(onlinePlayers);
+        return players.stream()
+                .map(uuid -> BlocketAPI.getInstance().getOwnerPlugin().getServer().getPlayer(uuid))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
 
@@ -162,7 +151,7 @@ public class Audience {
      */
     public void setMiningSpeed(UUID player, float speed) {
         if (speed < 0 || speed == 1) {
-            BlocketAPI.getInstance().getOwnerPlugin().getLogger().warning("Invalid mining speed for player " + player + ": " + speed);
+            BlocketAPI.getInstance().getOwnerPlugin().getLogger().warning(() -> "Invalid mining speed for player " + player + ": " + speed);
             return;
         }
         miningSpeeds.put(player, speed);
