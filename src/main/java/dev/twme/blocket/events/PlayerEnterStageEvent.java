@@ -49,7 +49,7 @@ public class PlayerEnterStageEvent extends Event implements Cancellable {
      * @param player The player that entered the stage.
      */
     public PlayerEnterStageEvent(Stage stage, Player player) {
-       super(true); // 統一異步處理機制
+       super(true); // Unified asynchronous processing mechanism
        this.stage = stage;
        this.player = player;
    }

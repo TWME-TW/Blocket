@@ -42,13 +42,13 @@ public class View {
     private Pattern pattern;
 
     /**
-     * 工具方法：安全地為所有觀眾應用方塊變更，包含異常處理
-     * 消除重複的玩家遍歷邏輯，提高代碼可維護性
+     * Utility method: Safely applies block changes to all viewers with exception handling
+     * Eliminates duplicate player traversal logic to improve code maintainability
      *
-     * @param chunk 方塊所在的區塊
-     * @param position 方塊位置
-     * @param blockData 方塊數據，null 表示移除方塊
-     * @param operation 操作描述，用於日誌記錄
+     * @param chunk The chunk where the block is located
+     * @param position Block position
+     * @param blockData Block data, null means remove the block
+     * @param operation Operation description for logging
      */
     private void applyBlockChangeToViewers(BlocketChunk chunk, BlocketPosition position, BlockData blockData, String operation) {
         for (Player viewer : stage.getAudience().getOnlinePlayers()) {

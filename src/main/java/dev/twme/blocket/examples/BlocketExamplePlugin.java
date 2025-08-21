@@ -37,7 +37,7 @@ public class BlocketExamplePlugin extends JavaPlugin {
             .enableStageBoundListener(true)
             .enablePacketListeners(true)
             .defaultChunksPerTick(2)
-            .preserveOriginalLighting(true) // 啟用原始光照保留功能
+            .preserveOriginalLighting(true) // Enable original lighting preservation feature
             .build();
             
         blocketAPI = BlocketAPI.initialize(this, config);
@@ -113,9 +113,9 @@ public class BlocketExamplePlugin extends JavaPlugin {
             // Send blocks to audience (sync task)
             getServer().getScheduler().runTask(this, () -> {
                 mineStage.sendBlocksToAudience();
-                player.sendMessage("§a私人礦場已建立！區域: " + 
-                    pos1.getX() + "," + pos1.getY() + "," + pos1.getZ() + " 到 " +
-                    pos2.getX() + "," + pos2.getY() + "," + pos2.getZ());
+                player.sendMessage("§aPrivate mine created! Area: " +
+                   pos1.getX() + "," + pos1.getY() + "," + pos1.getZ() + " to " +
+                   pos2.getX() + "," + pos2.getY() + "," + pos2.getZ());
             });
         });
     }
@@ -123,9 +123,9 @@ public class BlocketExamplePlugin extends JavaPlugin {
     /**
     * Example: Create a farm with different crop ages
     *
-    * @param player 玩家
-    * @param corner1 農場第一角落座標
-    * @param corner2 農場第二角落座標
+    * @param player Player
+    * @param corner1 Farm first corner coordinates
+    * @param corner2 Farm second corner coordinates
      */
     public void createPrivateFarm(Player player, Location corner1, Location corner2) {
         // Create wheat farm with different growth stages
@@ -156,19 +156,19 @@ public class BlocketExamplePlugin extends JavaPlugin {
         farmView.addBlocks(farmBlocks);
         farmStage.sendBlocksToAudience();
         
-        player.sendMessage("§a私人農場已建立！");
+        player.sendMessage("§aPrivate farm created!");
     }
     
     /**
     * Example: Dynamic view management
     *
-    * @param player 玩家
-    * @param stageName 要加入秘密層的舞台名稱
+    * @param player Player
+    * @param stageName Stage name to add secret layer
      */
     public void addSecretLayer(Player player, String stageName) {
         Stage stage = blocketAPI.getStageManager().getStage(stageName);
         if (stage == null) {
-            player.sendMessage("§c舞台不存在: " + stageName);
+            player.sendMessage("§cStage does not exist: " + stageName);
             return;
         }
         
@@ -195,6 +195,6 @@ public class BlocketExamplePlugin extends JavaPlugin {
         // Only show to this specific player
         stage.addViewForPlayer(player, secretView);
         
-        player.sendMessage("§6秘密礦層已為您開啟！");
+        player.sendMessage("§6Secret ore layer opened for you!");
     }
 }

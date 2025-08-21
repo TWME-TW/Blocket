@@ -4,13 +4,13 @@ import com.github.retrooper.packetevents.protocol.world.chunk.Column;
 import com.github.retrooper.packetevents.protocol.world.chunk.LightData;
 
 /**
- * 區塊數據包數據
- * 封裝發送區塊數據包所需的所有數據
- * 
- * <p>這個類作為數據傳輸對象(DTO)，包含：
+ * Chunk data packet
+ * Encapsulates all data needed to send a chunk data packet
+ *
+ * <p>This class acts as a Data Transfer Object (DTO), containing:
  * <ul>
- *   <li>區塊Column對象</li>
- *   <li>光照數據LightData對象</li>
+ *   <li>Chunk Column object</li>
+ *   <li>Light data LightData object</li>
  * </ul>
  * 
  * @author TWME-TW
@@ -23,10 +23,10 @@ public class ChunkPacketData {
     private final LightData lightData;
     
     /**
-     * 建構子
-     * 
-     * @param column 區塊Column對象
-     * @param lightData 光照數據對象
+     * Constructor
+     *
+     * @param column Chunk Column object
+     * @param lightData Light data object
      */
     public ChunkPacketData(Column column, LightData lightData) {
         this.column = column;
@@ -34,45 +34,45 @@ public class ChunkPacketData {
     }
     
     /**
-     * 獲取區塊Column對象
-     * 
-     * @return 區塊Column對象
+     * Get chunk Column object
+     *
+     * @return Chunk Column object
      */
     public Column getColumn() {
         return column;
     }
     
     /**
-     * 獲取光照數據對象
-     * 
-     * @return 光照數據對象
+     * Get light data object
+     *
+     * @return Light data object
      */
     public LightData getLightData() {
         return lightData;
     }
     
     /**
-     * 檢查數據是否有效
-     * 
-     * @return true如果Column和LightData都不為null，false否則
+     * Check if data is valid
+     *
+     * @return true if both Column and LightData are not null, false otherwise
      */
     public boolean isValid() {
         return column != null && lightData != null;
     }
     
     /**
-     * 獲取區塊座標X
-     * 
-     * @return 區塊X座標，如果Column為null則返回0
+     * Get chunk coordinate X
+     *
+     * @return Chunk X coordinate, returns 0 if Column is null
      */
     public int getChunkX() {
         return column != null ? column.getX() : 0;
     }
     
     /**
-     * 獲取區塊座標Z
-     * 
-     * @return 區塊Z座標，如果Column為null則返回0
+     * Get chunk coordinate Z
+     *
+     * @return Chunk Z coordinate, returns 0 if Column is null
      */
     public int getChunkZ() {
         return column != null ? column.getZ() : 0;

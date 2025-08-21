@@ -11,16 +11,16 @@ import dev.twme.blocket.types.BlocketChunk;
 import dev.twme.blocket.types.BlocketPosition;
 
 /**
- * 區塊處理上下文
- * 封裝區塊處理過程中需要的所有上下文信息
- * 
- * <p>這個類作為數據傳輸對象(DTO)，包含：
+ * Chunk processing context
+ * Encapsulates all context information needed during chunk processing
+ *
+ * <p>This class acts as a Data Transfer Object (DTO), containing:
  * <ul>
- *   <li>玩家信息</li>
- *   <li>區塊信息</li>
- *   <li>PacketEvents用戶對象</li>
- *   <li>自定義方塊數據</li>
- *   <li>處理標誌</li>
+ *   <li>Player information</li>
+ *   <li>Chunk information</li>
+ *   <li>PacketEvents user object</li>
+ *   <li>Custom block data</li>
+ *   <li>Processing flags</li>
  * </ul>
  * 
  * @author TWME-TW
@@ -36,13 +36,13 @@ public class ChunkProcessingContext {
     private final boolean unload;
     
     /**
-     * 建構子
-     * 
-     * @param player 玩家
-     * @param chunk 區塊
-     * @param packetUser PacketEvents用戶對象
-     * @param customBlockData 自定義方塊數據映射
-     * @param unload 是否為卸載操作
+     * Constructor
+     *
+     * @param player Player
+     * @param chunk Chunk
+     * @param packetUser PacketEvents user object
+     * @param customBlockData Custom block data map
+     * @param unload Whether it is an unload operation
      */
     public ChunkProcessingContext(
             Player player,
@@ -58,81 +58,81 @@ public class ChunkProcessingContext {
     }
     
     /**
-     * 獲取玩家
-     * 
-     * @return 玩家對象
+     * Get player
+     *
+     * @return Player object
      */
     public Player getPlayer() {
         return player;
     }
     
     /**
-     * 獲取區塊
-     * 
-     * @return 區塊對象
+     * Get chunk
+     *
+     * @return Chunk object
      */
     public BlocketChunk getChunk() {
         return chunk;
     }
     
     /**
-     * 獲取PacketEvents用戶對象
-     * 
-     * @return PacketEvents用戶對象
+     * Get PacketEvents user object
+     *
+     * @return PacketEvents user object
      */
     public User getPacketUser() {
         return packetUser;
     }
     
     /**
-     * 獲取自定義方塊數據
-     * 
-     * @return 自定義方塊數據映射，可能為null
+     * Get custom block data
+     *
+     * @return Custom block data map, may be null
      */
     public Map<BlocketPosition, BlockData> getCustomBlockData() {
         return customBlockData;
     }
     
     /**
-     * 是否為卸載操作
-     * 
-     * @return true如果是卸載操作，false否則
+     * Whether it is an unload operation
+     *
+     * @return true if it is an unload operation, false otherwise
      */
     public boolean isUnload() {
         return unload;
     }
     
     /**
-     * 檢查是否有自定義方塊數據
-     * 
-     * @return true如果有自定義方塊數據，false否則
+     * Check if there is custom block data
+     *
+     * @return true if there is custom block data, false otherwise
      */
     public boolean hasCustomBlockData() {
         return customBlockData != null && !customBlockData.isEmpty();
     }
     
     /**
-     * 獲取Y軸區塊段數量
-     * 
-     * @return Y軸區塊段數量
+     * Get the number of Y-axis chunk sections
+     *
+     * @return Number of Y-axis chunk sections
      */
     public int getYSections() {
         return packetUser.getTotalWorldHeight() >> 4;
     }
     
     /**
-     * 獲取世界最大高度
-     * 
-     * @return 世界最大高度
+     * Get world maximum height
+     *
+     * @return World maximum height
      */
     public int getMaxHeight() {
         return player.getWorld().getMaxHeight();
     }
     
     /**
-     * 獲取世界最小高度
-     * 
-     * @return 世界最小高度
+     * Get world minimum height
+     *
+     * @return World minimum height
      */
     public int getMinHeight() {
         return player.getWorld().getMinHeight();

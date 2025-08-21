@@ -22,22 +22,22 @@ import dev.twme.blocket.types.BlocketChunk;
 import dev.twme.blocket.types.BlocketPosition;
 
 /**
- * 區塊處理工廠類
- * 負責協調各個處理器，創建完整的區塊數據包
- * 
- * <p>主要功能包括：
+ * Chunk processing factory class
+ * Responsible for coordinating various processors to create complete chunk data packets
+ *
+ * <p>Main functions include:
  * <ul>
- *   <li>協調ChunkDataProcessor和LightDataProcessor</li>
- *   <li>創建完整的區塊Column對象</li>
- *   <li>處理生物群系數據</li>
- *   <li>提供高級的區塊處理接口</li>
+ *   <li>Coordinating ChunkDataProcessor and LightDataProcessor</li>
+ *   <li>Creating complete chunk Column objects</li>
+ *   <li>Handling biome data</li>
+ *   <li>Providing advanced chunk processing interfaces</li>
  * </ul>
- * 
- * <p>使用建造者模式來配置處理選項，支援：
+ *
+ * <p>Uses builder pattern to configure processing options, supporting:
  * <ul>
- *   <li>選擇光照處理模式（完整光照或空光照）</li>
- *   <li>配置快取策略</li>
- *   <li>自定義生物群系設置</li>
+ *   <li>Choosing lighting processing mode (full lighting or empty lighting)</li>
+ *   <li>Configuring cache strategy</li>
+ *   <li>Custom biome settings</li>
  * </ul>
  * 
  * @author TWME-TW
@@ -50,7 +50,7 @@ public class ChunkProcessorFactory {
     private final LightDataProcessor lightDataProcessor;
     
     /**
-     * 建構子
+     * Constructor
      */
     public ChunkProcessorFactory() {
         this.chunkDataProcessor = new ChunkDataProcessor();
@@ -58,9 +58,9 @@ public class ChunkProcessorFactory {
     }
     
     /**
-     * 建構子，允許指定快取大小
-     * 
-     * @param cacheSize 方塊狀態快取大小
+     * Constructor, allows specifying cache size
+     *
+     * @param cacheSize Block state cache size
      */
     public ChunkProcessorFactory(int cacheSize) {
         this.chunkDataProcessor = new ChunkDataProcessor(cacheSize);
@@ -68,14 +68,14 @@ public class ChunkProcessorFactory {
     }
     
     /**
-     * 創建完整的區塊Column對象
-     * 
-     * @param player 玩家
-     * @param chunk 區塊
-     * @param customBlockData 自定義方塊數據
-     * @param options 處理選項
-     * @return 完整的Column對象
-     * @throws ChunkProcessingException 當處理過程中發生錯誤時拋出
+     * Create a complete chunk Column object
+     *
+     * @param player Player
+     * @param chunk Chunk
+     * @param customBlockData Custom block data
+     * @param options Processing options
+     * @return Complete Column object
+     * @throws ChunkProcessingException Thrown when an error occurs during processing
      */
     public Column createChunkColumn(
             Player player,
@@ -86,7 +86,7 @@ public class ChunkProcessorFactory {
         validateInputs(player, chunk, options);
         
         try {
-            // 獲取基本信息
+            // Get basic information
             User packetUser = options.getPacketUser();
             int ySections = packetUser.getTotalWorldHeight() >> ChunkConstants.SECTION_SHIFT;
             Chunk bukkitChunk = player.getWorld().getChunkAt(chunk.x(), chunk.z());
@@ -94,27 +94,27 @@ public class ChunkProcessorFactory {
             int maxHeight = player.getWorld().getMaxHeight();
             int minHeight = player.getWorld().getMinHeight();
             
-            // 提取預設方塊數據
+            // Extract default block data
             BlockData[][][][] defaultBlockData = chunkDataProcessor.extractDefaultBlockData(
                 chunkSnapshot, ySections, minHeight, maxHeight);
             
-            // 創建區塊段列表
+            // Create chunk section list
             List<BaseChunk> chunks = createChunkSections(
                 defaultBlockData, customBlockData, chunk, ySections, minHeight, maxHeight, options);
             
-            // 創建光照數據
+            // Create light data
             LightData lightData = createLightData(chunkSnapshot, ySections, minHeight, maxHeight, options);
             
-            // 創建並返回Column
+            // Create and return Column
             return new Column(chunk.x(), chunk.z(), true, chunks.toArray(new BaseChunk[0]), null);
             
         } catch (Exception e) {
-            throw new ChunkProcessingException("創建區塊Column時發生錯誤", e);
+            throw new ChunkProcessingException("Error occurred while creating chunk Column", e);
         }
     }
     
     /**
-     * 創建區塊段列表
+     * Create chunk section list
      */
     private List<BaseChunk> createChunkSections(
             BlockData[][][][] defaultBlockData,
@@ -137,7 +137,7 @@ public class ChunkProcessorFactory {
     }
     
     /**
-     * 創建單個區塊段
+     * Create a single chunk section
      */
     private Chunk_v1_18 createChunkSection(
             BlockData[][][][] defaultBlockData,
@@ -151,7 +151,7 @@ public class ChunkProcessorFactory {
         Chunk_v1_18 baseChunk = new Chunk_v1_18();
         long baseY = (section << ChunkConstants.SECTION_SHIFT) + minHeight;
         
-        // 填充方塊數據
+        // Fill block data
         for (int x = 0; x < ChunkConstants.CHUNK_WIDTH; x++) {
             for (int y = 0; y < ChunkConstants.CHUNK_SECTION_HEIGHT; y++) {
                 long worldY = baseY + y;
@@ -164,14 +164,14 @@ public class ChunkProcessorFactory {
             }
         }
         
-        // 設置生物群系數據
+        // Set biome data
         setBiomeData(baseChunk, options.getBiomeId());
         
         return baseChunk;
     }
     
     /**
-     * 處理指定位置的方塊
+     * Process block at specified position
      */
     private void processBlockAtPosition(
             Chunk_v1_18 baseChunk,
@@ -182,26 +182,26 @@ public class ChunkProcessorFactory {
             int x, int y, int z,
             int minHeight) {
         
-        // 計算世界座標
+        // Calculate world coordinates
         BlocketPosition position = new BlocketPosition(
             x + (chunk.x() << ChunkConstants.SECTION_SHIFT),
             (section << ChunkConstants.SECTION_SHIFT) + y + minHeight,
             z + (chunk.z() << ChunkConstants.SECTION_SHIFT)
         );
         
-        // 獲取方塊數據
+        // Get block data
         BlockData blockData = chunkDataProcessor.getBlockDataAtPosition(
             position, chunk, customBlockData, defaultBlockData, section, minHeight);
         
         if (blockData != null) {
-            // 轉換為WrappedBlockState並設置到區塊中
+            // Convert to WrappedBlockState and set to chunk
             WrappedBlockState state = chunkDataProcessor.getWrappedBlockState(blockData);
             baseChunk.set(x, y, z, state);
         }
     }
     
     /**
-     * 設置生物群系數據
+     * Set biome data
      */
     private void setBiomeData(Chunk_v1_18 baseChunk, int biomeId) {
         int actualBiomeId = baseChunk.getBiomeData().palette.stateToId(biomeId);
@@ -213,7 +213,7 @@ public class ChunkProcessorFactory {
     }
     
     /**
-     * 創建光照數據
+     * Create light data
      */
     private LightData createLightData(
             ChunkSnapshot chunkSnapshot,
@@ -230,50 +230,50 @@ public class ChunkProcessorFactory {
     }
     
     /**
-     * 檢查世界Y座標是否有效
+     * Check if world Y coordinate is valid
      */
     private boolean isValidWorldY(long worldY, int minHeight, int maxHeight) {
         return worldY >= minHeight && worldY < maxHeight;
     }
     
     /**
-     * 驗證輸入參數
+     * Validate input parameters
      */
     private void validateInputs(Player player, BlocketChunk chunk, ChunkProcessingOptions options) 
             throws ChunkProcessingException {
         if (player == null) {
-            throw new ChunkProcessingException("玩家不能為null");
+            throw new ChunkProcessingException("Player cannot be null");
         }
         if (chunk == null) {
-            throw new ChunkProcessingException("區塊不能為null");
+            throw new ChunkProcessingException("Chunk cannot be null");
         }
         if (options == null) {
-            throw new ChunkProcessingException("處理選項不能為null");
+            throw new ChunkProcessingException("Processing options cannot be null");
         }
         if (options.getPacketUser() == null) {
-            throw new ChunkProcessingException("PacketUser不能為null");
+            throw new ChunkProcessingException("PacketUser cannot be null");
         }
     }
     
     /**
-     * 清除所有快取
+     * Clear all caches
      */
     public void clearCaches() {
         chunkDataProcessor.clearCache();
     }
     
     /**
-     * 獲取快取統計信息
-     * 
-     * @return 快取大小
+     * Get cache statistics
+     *
+     * @return Cache size
      */
     public int getCacheSize() {
         return chunkDataProcessor.getCacheSize();
     }
     
     /**
-     * 區塊處理選項類
-     * 使用建造者模式來配置處理選項
+     * Chunk processing options class
+     * Use builder pattern to configure processing options
      */
     public static class ChunkProcessingOptions {
         private User packetUser;

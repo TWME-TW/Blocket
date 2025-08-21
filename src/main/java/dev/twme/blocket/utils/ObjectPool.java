@@ -4,18 +4,18 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 
 /**
- * 通用對象池
- * 用於重用昂貴的對象，減少垃圾回收壓力
- * 
- * <p>特點：
+ * General object pool
+ * Used to reuse expensive objects and reduce garbage collection pressure
+ *
+ * <p>Features:
  * <ul>
- *   <li>線程安全的對象池實現</li>
- *   <li>支援自定義對象工廠</li>
- *   <li>自動清理和重置機制</li>
- *   <li>可配置的最大池大小</li>
+ *   <li>Thread-safe object pool implementation</li>
+ *   <li>Supports custom object factories</li>
+ *   <li>Automatic cleaning and resetting mechanism</li>
+ *   <li>Configurable maximum pool size</li>
  * </ul>
- * 
- * @param <T> 池化對象的類型
+ *
+ * @param <T> Type of pooled objects
  * @author TWME-TW
  * @version 1.0.0
  * @since 1.0.0
@@ -27,10 +27,10 @@ public class ObjectPool<T> {
     private final int maxSize;
     
     /**
-     * 建構子
-     * 
-     * @param objectFactory 對象工廠，用於創建新對象
-     * @param maxSize 池的最大大小
+     * Constructor
+     *
+     * @param objectFactory Object factory for creating new objects
+     * @param maxSize Maximum pool size
      */
     public ObjectPool(Supplier<T> objectFactory, int maxSize) {
         this.pool = new ConcurrentLinkedQueue<>();
@@ -39,10 +39,10 @@ public class ObjectPool<T> {
     }
     
     /**
-     * 從池中獲取對象
-     * 如果池為空，則創建新對象
-     * 
-     * @return 池化對象
+     * Acquire an object from the pool
+     * If the pool is empty, create a new object
+     *
+     * @return Pooled object
      */
     public T acquire() {
         T object = pool.poll();
@@ -53,10 +53,10 @@ public class ObjectPool<T> {
     }
     
     /**
-     * 將對象歸還到池中
-     * 如果池已滿，則丟棄對象
-     * 
-     * @param object 要歸還的對象
+     * Return an object to the pool
+     * If the pool is full, discard the object
+     *
+     * @param object Object to return
      */
     public void release(T object) {
         if (object != null && pool.size() < maxSize) {
@@ -65,25 +65,25 @@ public class ObjectPool<T> {
     }
     
     /**
-     * 清空池
+     * Clear the pool
      */
     public void clear() {
         pool.clear();
     }
     
     /**
-     * 獲取當前池大小
-     * 
-     * @return 池中對象數量
+     * Get current pool size
+     *
+     * @return Number of objects in the pool
      */
     public int size() {
         return pool.size();
     }
     
     /**
-     * 檢查池是否為空
-     * 
-     * @return true如果池為空，false否則
+     * Check if the pool is empty
+     *
+     * @return true if the pool is empty, false otherwise
      */
     public boolean isEmpty() {
         return pool.isEmpty();

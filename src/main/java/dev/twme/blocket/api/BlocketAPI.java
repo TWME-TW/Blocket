@@ -174,19 +174,19 @@ public class BlocketAPI {
     /**
      * Shutdown and cleanup all resources
      * This should be called in the plugin's onDisable() method
-     * 確保所有資源在插件關閉時正確釋放，包括線程池和其他管理器
+     * Ensure all resources are properly released when the plugin is disabled, including thread pools and other managers
      */
     public void shutdown() {
         ownerPlugin.getLogger().info("Shutting down Blocket API...");
         
         // Shutdown managers
-        // 關閉 BlockChangeManager，釋放其線程池和相關資源
+        // Shutdown BlockChangeManager, releasing its thread pool and related resources
         if (blockChangeManager != null) {
             blockChangeManager.shutdown();
         }
         
         // Unregister packet listeners
-        // 取消註冊所有包監聽器
+        // Unregister all packet listeners
         if (config.isEnablePacketListeners()) {
             if (blockDigAdapter != null) {
                 PacketEvents.getAPI().getEventManager().unregisterListener(blockDigAdapter);
@@ -200,7 +200,7 @@ public class BlocketAPI {
         }
         
         // Clear static instance
-        // 清理靜態實例
+        // Clear static instance
         instance = null;
         
         ownerPlugin.getLogger().info("Blocket API shutdown complete.");

@@ -16,36 +16,36 @@ public class PerformanceMonitor {
     private final ConcurrentHashMap<String, AtomicLong> minTimes = new ConcurrentHashMap<>();
     
     /**
-     * 增加操作計數
-     * 
-     * @param operation 操作名稱
+     * Increment operation count
+     *
+     * @param operation Operation name
      */
     public void incrementCounter(String operation) {
         counters.computeIfAbsent(operation, k -> new LongAdder()).increment();
     }
     
     /**
-     * 記錄操作執行時間
-     * 
-     * @param operation 操作名稱
-     * @param timeMs 執行時間（毫秒）
+     * Record operation execution time
+     *
+     * @param operation Operation name
+     * @param timeMs Execution time (milliseconds)
      */
     public void recordTime(String operation, long timeMs) {
         incrementCounter(operation);
         totalTimes.computeIfAbsent(operation, k -> new AtomicLong()).addAndGet(timeMs);
         
-        // 更新最大時間
+        // Update maximum time
         maxTimes.computeIfAbsent(operation, k -> new AtomicLong()).updateAndGet(current -> Math.max(current, timeMs));
         
-        // 更新最小時間
+        // Update minimum time
         minTimes.computeIfAbsent(operation, k -> new AtomicLong(Long.MAX_VALUE)).updateAndGet(current -> Math.min(current, timeMs));
     }
     
     /**
-     * 獲取操作計數
-     * 
-     * @param operation 操作名稱
-     * @return 操作計數
+     * Get operation count
+     *
+     * @param operation Operation name
+     * @return Operation count
      */
     public long getCount(String operation) {
         LongAdder counter = counters.get(operation);
@@ -53,10 +53,10 @@ public class PerformanceMonitor {
     }
     
     /**
-     * 獲取總執行時間
-     * 
-     * @param operation 操作名稱
-     * @return 總執行時間（毫秒）
+     * Get total execution time
+     *
+     * @param operation Operation name
+     * @return Total execution time (milliseconds)
      */
     public long getTotalTime(String operation) {
         AtomicLong totalTime = totalTimes.get(operation);
@@ -64,10 +64,10 @@ public class PerformanceMonitor {
     }
     
     /**
-     * 獲取平均執行時間
-     * 
-     * @param operation 操作名稱
-     * @return 平均執行時間（毫秒）
+     * Get average execution time
+     *
+     * @param operation Operation name
+     * @return Average execution time (milliseconds)
      */
     public double getAverageTime(String operation) {
         long count = getCount(operation);
@@ -78,10 +78,10 @@ public class PerformanceMonitor {
     }
     
     /**
-     * 獲取最大執行時間
-     * 
-     * @param operation 操作名稱
-     * @return 最大執行時間（毫秒）
+     * Get maximum execution time
+     *
+     * @param operation Operation name
+     * @return Maximum execution time (milliseconds)
      */
     public long getMaxTime(String operation) {
         AtomicLong maxTime = maxTimes.get(operation);
@@ -89,10 +89,10 @@ public class PerformanceMonitor {
     }
     
     /**
-     * 獲取最小執行時間
-     * 
-     * @param operation 操作名稱
-     * @return 最小執行時間（毫秒）
+     * Get minimum execution time
+     *
+     * @param operation Operation name
+     * @return Minimum execution time (milliseconds)
      */
     public long getMinTime(String operation) {
         AtomicLong minTime = minTimes.get(operation);
@@ -101,9 +101,9 @@ public class PerformanceMonitor {
     }
     
     /**
-     * 重置指定操作的統計數據
-     * 
-     * @param operation 操作名稱
+     * Reset statistics for a specific operation
+     *
+     * @param operation Operation name
      */
     public void reset(String operation) {
         counters.remove(operation);
@@ -113,7 +113,7 @@ public class PerformanceMonitor {
     }
     
     /**
-     * 重置所有統計數據
+     * Reset all statistics
      */
     public void resetAll() {
         counters.clear();
@@ -123,13 +123,13 @@ public class PerformanceMonitor {
     }
     
     /**
-     * 生成性能報告
-     * 
-     * @return 性能報告字符串
+     * Generate performance report
+     *
+     * @return Performance report string
      */
     public String generateReport() {
         StringBuilder report = new StringBuilder();
-        report.append("=== 性能監控報告 ===\n");
+        report.append("=== Performance Monitoring Report ===\n");
         
         for (String operation : counters.keySet()) {
             long count = getCount(operation);
@@ -139,12 +139,12 @@ public class PerformanceMonitor {
             long totalTime = getTotalTime(operation);
             
             report.append(String.format(
-                "操作: %s\n" +
-                "  計數: %d\n" +
-                "  總時間: %d ms\n" +
-                "  平均時間: %.2f ms\n" +
-                "  最大時間: %d ms\n" +
-                "  最小時間: %d ms\n" +
+                "Operation: %s\n" +
+                "  Count: %d\n" +
+                "  Total Time: %d ms\n" +
+                "  Average Time: %.2f ms\n" +
+                "  Maximum Time: %d ms\n" +
+                "  Minimum Time: %d ms\n" +
                 "---\n",
                 operation, count, totalTime, avgTime, maxTime, minTime
             ));
@@ -154,7 +154,7 @@ public class PerformanceMonitor {
     }
     
     /**
-     * 計時器類，用於自動測量執行時間
+     * Timer class for automatically measuring execution time
      */
     public static class Timer implements AutoCloseable {
         private final PerformanceMonitor monitor;
@@ -180,10 +180,10 @@ public class PerformanceMonitor {
     }
     
     /**
-     * 創建計時器
-     * 
-     * @param operation 操作名稱
-     * @return 計時器實例
+     * Create a timer
+     *
+     * @param operation Operation name
+     * @return Timer instance
      */
     public Timer startTimer(String operation) {
         return new Timer(this, operation);

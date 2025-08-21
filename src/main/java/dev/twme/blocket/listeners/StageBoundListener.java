@@ -176,7 +176,7 @@ public class StageBoundListener implements Listener {
      */
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        // 主動清理離線玩家的快取，防止記憶體洩漏
+        // Actively clean up cache for offline players to prevent memory leaks
         LoadingCache<UUID, List<Stage>> cache = getStageCache();
         if (cache != null) {
             cache.invalidate(event.getPlayer().getUniqueId());

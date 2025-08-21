@@ -103,12 +103,12 @@ public class BlockChangeManager {
         this.api = api;
         this.blockDataCache = new LRUCache<>(api.getConfig().getBlockCacheSize());
         this.chunkProcessorFactory = new ChunkProcessorFactory();
-        // 使用配置化的對象池大小，提高效能調優的靈活性
+        // Uses configured object pool size to improve performance tuning flexibility
         int maxPoolSize = api.getConfig().getMaxObjectPoolSize();
         this.blockDataMapPool = new ObjectPool<>(HashMap::new, maxPoolSize / 2);
         this.chunkListPool = new ObjectPool<>(ArrayList::new, maxPoolSize / 5);
         this.lightDataArrayPool = new ObjectPool<>(() -> new byte[2048], maxPoolSize);
-        // 擴展對象池支援：為更多重複創建的對象添加池化，使用配置化大小
+        // Extended object pool support: Add pooling for more repeatedly created objects, using configured size
         this.bitSetPool = new ObjectPool<>(() -> new BitSet(32), maxPoolSize / 3);
         this.lightArrayPool = new ObjectPool<>(() -> new byte[32][2048], maxPoolSize / 5);
         this.entryPool = new ObjectPool<>(() -> new AbstractMap.SimpleEntry<>(null, null), maxPoolSize / 2);
@@ -498,7 +498,7 @@ public class BlockChangeManager {
 
                     AtomicInteger chunkIndex = new AtomicInteger(0);
                     
-                    // 線程安全：在添加新任務前檢查並取消現有任務，防止任務覆蓋和洩漏
+                    // Thread safety: Check and cancel existing tasks before adding new tasks to prevent task overlap and leaks
                     UUID playerUUID = player.getUniqueId();
                     BukkitTask existingTask = blockChangeTasks.get(playerUUID);
                     if (existingTask != null && !existingTask.isCancelled()) {
@@ -569,12 +569,12 @@ public class BlockChangeManager {
      * @param unload Whether this is an unload operation
      */
     /**
-     * 處理並發送區塊封包的主要方法
-     * 已重構為更小的方法以降低複雜度和提高可維護性
+     * Main method for processing and sending chunk packets
+     * Refactored into smaller methods to reduce complexity and improve maintainability
      *
-     * @param player 目標玩家
-     * @param chunk 要處理的區塊
-     * @param unload 是否為卸載操作
+     * @param player Target player
+     * @param chunk Chunk to process
+     * @param unload Whether this is an unload operation
      */
     private void processAndSendChunk(Player player, BlocketChunk chunk, boolean unload) {
         try (PerformanceMonitor.Timer timer = performanceMonitor.startTimer("processAndSendChunk")) {
@@ -587,35 +587,35 @@ public class BlockChangeManager {
     }
 
     /**
-     * 執行區塊處理管道的所有步驟
-     * 將複雜的處理邏輯分解為清晰的步驟
+     * Execute all steps of the chunk processing pipeline
+     * Decompose complex processing logic into clear steps
      *
-     * @param player 目標玩家
-     * @param chunk 要處理的區塊
-     * @param unload 是否為卸載操作
-     * @throws ChunkProcessingException 如果處理過程中發生錯誤
+     * @param player Target player
+     * @param chunk Chunk to process
+     * @param unload Whether this is an unload operation
+     * @throws ChunkProcessingException If an error occurs during processing
      */
     private void executeChunkProcessingPipeline(Player player, BlocketChunk chunk, boolean unload) throws ChunkProcessingException {
-        // 步驟 1: 驗證輸入參數
+        // Step 1: Validate input parameters
         validateChunkProcessingInputs(player, chunk);
         
-        // 步驟 2: 創建處理上下文
+        // Step 2: Create processing context
         ChunkProcessingContext context = createProcessingContext(player, chunk, unload);
         
-        // 步驟 3: 創建區塊封包數據
+        // Step 3: Create chunk packet data
         ChunkPacketData packetData = createChunkPacketData(context);
         
-        // 步驟 4: 發送封包給客戶端
+        // Step 4: Send packet to client
         sendChunkPackets(context.getPacketUser(), chunk, packetData);
     }
 
     /**
-     * 處理已知的區塊處理異常
-     * 分離異常處理邏輯以提高代碼清晰度
+     * Handle known chunk processing exceptions
+     * Separate exception handling logic to improve code clarity
      *
-     * @param player 相關玩家
-     * @param chunk 相關區塊
-     * @param e 區塊處理異常
+     * @param player Related player
+     * @param chunk Related chunk
+     * @param e Chunk processing exception
      */
     private void handleKnownChunkProcessingError(Player player, BlocketChunk chunk, ChunkProcessingException e) {
         performanceMonitor.incrementCounter("chunkProcessingErrors");
@@ -623,12 +623,12 @@ public class BlockChangeManager {
     }
 
     /**
-     * 處理未知的區塊處理異常
-     * 分離異常處理邏輯以提高代碼清晰度
+     * Handle unknown chunk processing exceptions
+     * Separate exception handling logic to improve code clarity
      *
-     * @param player 相關玩家
-     * @param chunk 相關區塊
-     * @param e 未預期的異常
+     * @param player Related player
+     * @param chunk Related chunk
+     * @param e Unexpected exception
      */
     private void handleUnknownChunkProcessingError(Player player, BlocketChunk chunk, Exception e) {
         performanceMonitor.incrementCounter("unexpectedErrors");
@@ -687,20 +687,20 @@ public class BlockChangeManager {
                 return createEmptyChunkPacketData(context);
             }
 
-            // 使用配置來決定光照處理策略
+            // Use configuration to determine lighting processing strategy
             boolean preserveLighting = api.getConfig().isPreserveOriginalLighting();
             ChunkProcessorFactory.ChunkProcessingOptions options = new ChunkProcessorFactory.ChunkProcessingOptions(context.getPacketUser())
                 .useEmptyLighting(!preserveLighting)
                 .preserveOriginalLighting(preserveLighting);
             Column column = chunkProcessorFactory.createChunkColumn(context.getPlayer(), context.getChunk(), context.getCustomBlockData(), options);
             
-            // 根據配置決定光線數據處理策略
+            // Determine light data processing strategy based on configuration
             LightData lightData;
             if (preserveLighting) {
-                // 從Column中提取正確的光線數據
+                // Extract correct light data from Column
                 lightData = extractLightDataFromColumn(column, context);
             } else {
-                // 向後兼容：使用空光線數據
+                // Backward compatibility: use empty light data
                 lightData = createEmptyLightData(context);
             }
 
@@ -735,9 +735,9 @@ public class BlockChangeManager {
      */
     private LightData extractLightDataFromColumn(Column column, ChunkProcessingContext context) throws ChunkProcessingException {
         try {
-            // 使用 LightDataProcessor 來創建正確的光照數據
-            // 由於 Column 對象是由 ChunkProcessorFactory 創建的，它已經包含了正確的光照處理
-            // 我們需要從原始區塊快照中提取光照數據
+            // Use LightDataProcessor to create correct light data
+            // Since the Column object is created by ChunkProcessorFactory, it already contains correct light processing
+            // We need to extract light data from the original chunk snapshot
             
             int ySections = context.getPacketUser().getTotalWorldHeight() >> 4;
             org.bukkit.Chunk bukkitChunk = context.getPlayer().getWorld().getChunkAt(context.getChunk().x(), context.getChunk().z());
@@ -745,12 +745,12 @@ public class BlockChangeManager {
             int maxHeight = context.getPlayer().getWorld().getMaxHeight();
             int minHeight = context.getPlayer().getWorld().getMinHeight();
             
-            // 使用 LightDataProcessor 創建完整的光照數據
+            // Use LightDataProcessor to create complete light data
             dev.twme.blocket.processors.LightDataProcessor lightProcessor = new dev.twme.blocket.processors.LightDataProcessor();
             return lightProcessor.createLightData(chunkSnapshot, ySections, minHeight, maxHeight);
             
         } catch (Exception e) {
-            // 如果提取光照數據失敗，回退到空光照數據以確保向後兼容性
+            // If light data extraction fails, fall back to empty light data to ensure backward compatibility
             api.getOwnerPlugin().getLogger().warning("Failed to extract light data from column, falling back to empty light data: " + e.getMessage());
             return createEmptyLightData(context);
         }

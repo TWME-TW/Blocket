@@ -147,7 +147,7 @@ public class BlockDigAdapter extends SimplePacketListenerAbstract {
 
         double hardness = blockData.getMaterial().getHardness();
 
-        // 使用配置化的速度倍數閾值，而非硬編碼的魔術數字
+        // Use a configurable speed multiplier threshold instead of hardcoded magic numbers
         double speedMultiplier = BlocketAPI.getInstance().getConfig().getInstantBreakSpeedMultiplier();
         
         // If break speed is at least (multiplier)x the hardness, it's an instant break

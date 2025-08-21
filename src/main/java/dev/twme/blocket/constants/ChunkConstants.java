@@ -1,63 +1,63 @@
 package dev.twme.blocket.constants;
 
 /**
- * 區塊處理相關的常數定義
- * 將魔術數字提取為有意義的常數，提高代碼可讀性和維護性
- * 
+ * Constants related to chunk processing
+ * Extract magic numbers as meaningful constants to improve code readability and maintainability
+ *
  * @author TWME-TW
  * @version 1.0.0
  * @since 1.0.0
  */
 public final class ChunkConstants {
     
-    // 區塊尺寸相關常數
-    /** 區塊寬度（X軸方向的方塊數量） */
+    // Constants related to chunk dimensions
+    /** Chunk width (number of blocks in the X-axis direction) */
     public static final int CHUNK_WIDTH = 16;
     
-    /** 區塊深度（Z軸方向的方塊數量） */
+    /** Chunk depth (number of blocks in the Z-axis direction) */
     public static final int CHUNK_DEPTH = 16;
     
-    /** 區塊段高度（每個區塊段的方塊數量） */
+    /** Chunk section height (number of blocks in each chunk section) */
     public static final int CHUNK_SECTION_HEIGHT = 16;
     
-    /** 位移操作常數：用於計算區塊段索引 {@code (section << 4)} */
+    /** Bit shift operation constant: used to calculate chunk section index {@code (section << 4)} */
     public static final int SECTION_SHIFT = 4;
     
-    // 光照數據相關常數
-    /** 光照數據陣列大小：每個區塊段需要2048字節存儲光照數據 */
+    // Constants related to light data
+    /** Light data array size: each chunk section requires 2048 bytes to store light data */
     public static final int LIGHT_DATA_SIZE = 2048;
     
-    /** 光照值的最大值（4位，0-15） */
+    /** Maximum light level (4 bits, 0-15) */
     public static final int MAX_LIGHT_LEVEL = 15;
     
-    /** 光照數據的位掩碼：用於提取低4位 */
+    /** Bit mask for light data: used to extract the lower 4 bits */
     public static final int LIGHT_MASK_LOW = 0x0F;
     
-    /** 光照數據的位掩碼：用於提取高4位 */
+    /** Bit mask for light data: used to extract the upper 4 bits */
     public static final int LIGHT_MASK_HIGH = 0xF0;
     
-    /** 光照數據的位移量：用於處理高4位 */
+    /** Bit shift for light data: used to process the upper 4 bits */
     public static final int LIGHT_SHIFT = 4;
     
-    // 位運算相關常數
-    /** 用於計算光照數據索引的位移常數 */
+    // Constants related to bitwise operations
+    /** Bit shift constant used to calculate light data index */
     public static final int LIGHT_INDEX_Y_SHIFT = 8;
     
-    /** 用於計算光照數據索引的位移常數 */
+    /** Bit shift constant used to calculate light data index */
     public static final int LIGHT_INDEX_Z_SHIFT = 4;
     
-    /** 用於計算字節索引的位移常數 */
+    /** Bit shift constant used to calculate byte index */
     public static final int BYTE_INDEX_SHIFT = 1;
     
-    /** 用於計算半字節索引的位掩碼 */
+    /** Bit mask used to calculate nibble index */
     public static final int NIBBLE_INDEX_MASK = 1;
     
-    // 生物群系相關常數
-    /** 預設生物群系ID */
+    // Constants related to biomes
+    /** Default biome ID */
     public static final int DEFAULT_BIOME_ID = 1;
     
-    // 私有建構子，防止實例化
+    // Private constructor to prevent instantiation
     private ChunkConstants() {
-        throw new UnsupportedOperationException("常數類不應被實例化");
+        throw new UnsupportedOperationException("Constant class should not be instantiated");
     }
 }

@@ -61,7 +61,7 @@ public class BlocketInteractEvent extends Event implements Cancellable {
      * @param stage The stage that the player is currently in.
      */
     public BlocketInteractEvent(Player player, BlocketPosition position, BlockData blockData, View view, Stage stage) {
-       super(true); // 統一異步處理機制
+       super(true); // Unified asynchronous processing mechanism
        this.player = player;
        this.position = position;
        this.blockData = blockData;

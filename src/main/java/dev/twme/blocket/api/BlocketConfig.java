@@ -149,8 +149,8 @@ public class BlocketConfig {
         private int defaultChunksPerTick = 1;
         private int blockCacheSize = 1000;
         private double instantBreakSpeedMultiplier = 30.0;
-        private long stageCacheExpirationMinutes = 5; // 調優：從1分鐘增加到5分鐘，減少快取未命中
-        private int maxObjectPoolSize = 100; // 調優：增加對象池大小以提高重用率
+        private long stageCacheExpirationMinutes = 5; // Optimization: Increased from 1 minute to 5 minutes to reduce cache misses
+        private int maxObjectPoolSize = 100; // Optimization: Increased object pool size to improve reuse rate
         private boolean preserveOriginalLighting = true;
         
         /**
@@ -323,7 +323,7 @@ public class BlocketConfig {
             if (maxObjectPoolSize <= 0) {
                 throw new IllegalArgumentException("Max object pool size must be positive");
             }
-            // preserveOriginalLighting 不需要驗證，因為它是布林值
+            // preserveOriginalLighting does not require validation as it is a boolean value
         }
     }
 }

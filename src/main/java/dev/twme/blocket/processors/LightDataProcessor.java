@@ -16,14 +16,14 @@ import dev.twme.blocket.exceptions.ChunkProcessingException;
 public class LightDataProcessor {
     
     /**
-     * 創建完整的光照數據對象
-     * 
-     * @param chunkSnapshot 區塊快照
-     * @param ySections Y軸區塊段數量
-     * @param minHeight 世界最小高度
-     * @param maxHeight 世界最大高度
-     * @return 完整的LightData對象
-     * @throws ChunkProcessingException 當處理過程中發生錯誤時拋出
+     * Create a complete LightData object
+     *
+     * @param chunkSnapshot Chunk snapshot
+     * @param ySections Number of Y-axis chunk sections
+     * @param minHeight Minimum world height
+     * @param maxHeight Maximum world height
+     * @return Complete LightData object
+     * @throws ChunkProcessingException Thrown when an error occurs during processing
      */
     public LightData createLightData(
             ChunkSnapshot chunkSnapshot,
@@ -34,35 +34,35 @@ public class LightDataProcessor {
         validateInputParameters(chunkSnapshot, ySections, minHeight, maxHeight);
         
         try {
-            // 創建光照數據陣列
+            // Create light data arrays
             byte[][] blockLightArray = createLightArray(ySections);
             byte[][] skyLightArray = createLightArray(ySections);
             
-            // 填充光照數據
+            // Populate light data
             populateLightData(chunkSnapshot, blockLightArray, skyLightArray, ySections, minHeight, maxHeight);
             
-            // 創建並配置LightData對象
+            // Create and configure LightData object
             return buildLightData(blockLightArray, skyLightArray, ySections);
             
         } catch (Exception e) {
-            throw new ChunkProcessingException("創建光照數據時發生錯誤", e);
+            throw new ChunkProcessingException("Error occurred while creating light data", e);
         }
     }
     
     /**
-     * 創建空的光照數據對象（讓客戶端自行計算光照）
-     * 
-     * @param ySections Y軸區塊段數量
-     * @return 空的LightData對象
-     * @throws ChunkProcessingException 當處理過程中發生錯誤時拋出
+     * Create an empty LightData object (let the client calculate lighting)
+     *
+     * @param ySections Number of Y-axis chunk sections
+     * @return Empty LightData object
+     * @throws ChunkProcessingException Thrown when an error occurs during processing
      */
     public LightData createEmptyLightData(int ySections) throws ChunkProcessingException {
         if (ySections <= 0) {
-            throw new ChunkProcessingException("Y軸區塊段數量必須大於0，實際值：" + ySections);
+            throw new ChunkProcessingException("Number of Y-axis chunk sections must be greater than 0, actual value: " + ySections);
         }
         
         try {
-            // 創建空的光照數據陣列
+            // Create empty light data arrays
             byte[][] emptyLightArray = createEmptyLightArray(ySections);
             
             LightData lightData = new LightData();
@@ -71,7 +71,7 @@ public class LightDataProcessor {
             lightData.setBlockLightCount(ySections);
             lightData.setSkyLightCount(ySections);
             
-            // 設置空遮罩（讓客戶端處理光照）
+            // Set empty masks (let the client handle lighting)
             BitSet emptyBitSet = new BitSet(ySections);
             for (int i = 0; i < ySections; i++) {
                 emptyBitSet.set(i);
@@ -85,21 +85,21 @@ public class LightDataProcessor {
             return lightData;
             
         } catch (Exception e) {
-            throw new ChunkProcessingException("創建空光照數據時發生錯誤", e);
+            throw new ChunkProcessingException("Error occurred while creating empty light data", e);
         }
     }
     
     /**
-     * 創建合併的光照數據對象
-     * 保留原始區塊的光照數據，同時處理自定義方塊的光照影響
+     * Create merged LightData object
+     * Retain original chunk lighting data while handling custom block lighting effects
      *
-     * @param chunkSnapshot 區塊快照
-     * @param customBlockPositions 自定義方塊位置集合（可為null）
-     * @param ySections Y軸區塊段數量
-     * @param minHeight 世界最小高度
-     * @param maxHeight 世界最大高度
-     * @return 合併的LightData對象
-     * @throws ChunkProcessingException 當處理過程中發生錯誤時拋出
+     * @param chunkSnapshot Chunk snapshot
+     * @param customBlockPositions Set of custom block positions (can be null)
+     * @param ySections Number of Y-axis chunk sections
+     * @param minHeight Minimum world height
+     * @param maxHeight Maximum world height
+     * @return Merged LightData object
+     * @throws ChunkProcessingException Thrown when an error occurs during processing
      */
     public LightData createMergedLightData(
             ChunkSnapshot chunkSnapshot,
@@ -111,32 +111,32 @@ public class LightDataProcessor {
         validateInputParameters(chunkSnapshot, ySections, minHeight, maxHeight);
         
         try {
-            // 首先創建基於原始區塊的完整光照數據
+            // First create complete light data based on the original chunk
             LightData baseLightData = createLightData(chunkSnapshot, ySections, minHeight, maxHeight);
             
-            // 如果沒有自定義方塊，直接返回原始光照
+            // If there are no custom blocks, return the original lighting
             if (customBlockPositions == null || customBlockPositions.isEmpty()) {
                 return baseLightData;
             }
             
-            // 創建修改後的光照數據陣列
+            // Create modified light data arrays
             byte[][] modifiedBlockLightArray = cloneLightArray(baseLightData.getBlockLightArray());
             byte[][] modifiedSkyLightArray = cloneLightArray(baseLightData.getSkyLightArray());
             
-            // 處理自定義方塊對光照的影響
+            // Handle the impact of custom blocks on lighting
             processCustomBlockLighting(customBlockPositions, modifiedBlockLightArray, modifiedSkyLightArray,
                                      ySections, minHeight, maxHeight);
             
-            // 創建並返回修改後的光照數據
+            // Create and return modified light data
             return buildLightData(modifiedBlockLightArray, modifiedSkyLightArray, ySections);
             
         } catch (Exception e) {
-            throw new ChunkProcessingException("創建合併光照數據時發生錯誤", e);
+            throw new ChunkProcessingException("Error occurred while creating merged light data", e);
         }
     }
     
     /**
-     * 複製光照數據陣列
+     * Clone light data arrays
      */
     private byte[][] cloneLightArray(byte[][] original) {
         if (original == null) return null;
@@ -151,8 +151,8 @@ public class LightDataProcessor {
     }
     
     /**
-     * 處理自定義方塊對光照的影響
-     * 這個方法可以根據需要進一步擴展來處理特定方塊類型的光照效果
+     * Handle the impact of custom blocks on lighting
+     * This method can be further extended to handle lighting effects of specific block types
      */
     private void processCustomBlockLighting(
             java.util.Set<dev.twme.blocket.types.BlocketPosition> customBlockPositions,
@@ -162,45 +162,45 @@ public class LightDataProcessor {
             int minHeight,
             int maxHeight) {
         
-        // 目前的實現保持原始光照不變
-        // 未來可以在這裡添加特定方塊類型的光照處理邏輯
-        // 例如：發光方塊增加光照值，不透明方塊減少光照傳播等
+        // Current implementation keeps the original lighting unchanged
+        // Future logic for handling specific block types can be added here
+        // For example: increase light value for glowing blocks, reduce light propagation for opaque blocks, etc.
         
         for (dev.twme.blocket.types.BlocketPosition pos : customBlockPositions) {
             int worldY = pos.getY();
             
-            // 檢查Y座標是否在有效範圍內
+            // Check if Y coordinate is within valid range
             if (worldY < minHeight || worldY >= maxHeight) {
                 continue;
             }
             
-            // 計算區塊段索引
+            // Calculate chunk section index
             int section = (worldY - minHeight) >> ChunkConstants.SECTION_SHIFT;
             if (section < 0 || section >= ySections) {
                 continue;
             }
             
-            // 計算區塊內座標
+            // Calculate local coordinates within the chunk
             int localX = pos.getX() & 15;
             int localY = worldY & 15;
             int localZ = pos.getZ() & 15;
             
-            // 計算光照索引
+            // Calculate light index
             int lightIndex = calculateLightIndex(localX, localY, localZ);
             int byteIndex = lightIndex >> ChunkConstants.BYTE_INDEX_SHIFT;
             int nibbleIndex = lightIndex & ChunkConstants.NIBBLE_INDEX_MASK;
             
-            // 這裡可以根據自定義方塊的類型來調整光照
-            // 目前保持原始光照值不變
-            // 未來可以添加：
-            // - 發光方塊：增加方塊光照值
-            // - 不透明方塊：減少天空光照值
-            // - 透明方塊：保持光照傳播
+            // Adjust lighting based on custom block type
+            // Currently keeps the original light value unchanged
+            // Future additions can include:
+            // - Glowing blocks: increase block light value
+            // - Opaque blocks: reduce sky light value
+            // - Transparent blocks: maintain light propagation
         }
     }
     
     /**
-     * 創建光照數據陣列
+     * Create light data arrays
      */
     private byte[][] createLightArray(int ySections) {
         byte[][] lightArray = new byte[ySections][];
@@ -211,18 +211,18 @@ public class LightDataProcessor {
     }
     
     /**
-     * 創建空的光照數據陣列
+     * Create empty light data arrays
      */
     private byte[][] createEmptyLightArray(int ySections) {
         byte[][] emptyLightArray = new byte[ySections][];
         for (int i = 0; i < ySections; i++) {
-            emptyLightArray[i] = new byte[ChunkConstants.LIGHT_DATA_SIZE]; // 全部為0
+            emptyLightArray[i] = new byte[ChunkConstants.LIGHT_DATA_SIZE]; // All zeros
         }
         return emptyLightArray;
     }
     
     /**
-     * 填充光照數據
+     * Populate light data
      */
     private void populateLightData(
             ChunkSnapshot chunkSnapshot,
@@ -239,7 +239,7 @@ public class LightDataProcessor {
     }
     
     /**
-     * 填充單個區塊段的光照數據
+     * Populate light data for a single chunk section
      */
     private void populateSectionLightData(
             ChunkSnapshot chunkSnapshot,
@@ -265,7 +265,7 @@ public class LightDataProcessor {
     }
     
     /**
-     * 處理指定位置的光照數據
+     * Process light data at a specific position
      */
     private void processLightAtPosition(
             ChunkSnapshot chunkSnapshot,
@@ -273,26 +273,26 @@ public class LightDataProcessor {
             byte[] skyLightData,
             int x, int y, int z, int worldY) {
         
-        // 獲取光照值
+        // Get light values
         int blockLight = chunkSnapshot.getBlockEmittedLight(x, worldY, z);
         int skyLight = chunkSnapshot.getBlockSkyLight(x, worldY, z);
         
-        // 確保光照值在有效範圍內
+        // Ensure light values are within valid range
         blockLight = Math.max(0, Math.min(ChunkConstants.MAX_LIGHT_LEVEL, blockLight));
         skyLight = Math.max(0, Math.min(ChunkConstants.MAX_LIGHT_LEVEL, skyLight));
         
-        // 計算光照數據索引
+        // Calculate light data index
         int index = calculateLightIndex(x, y, z);
         int byteIndex = index >> ChunkConstants.BYTE_INDEX_SHIFT;
         int nibbleIndex = index & ChunkConstants.NIBBLE_INDEX_MASK;
         
-        // 打包光照數據
+        // Pack light data
         packLightValue(blockLightData, byteIndex, nibbleIndex, blockLight);
         packLightValue(skyLightData, byteIndex, nibbleIndex, skyLight);
     }
     
     /**
-     * 計算光照數據索引
+     * Calculate light data index
      */
     private int calculateLightIndex(int x, int y, int z) {
         return y << ChunkConstants.LIGHT_INDEX_Y_SHIFT | 
@@ -301,16 +301,16 @@ public class LightDataProcessor {
     }
     
     /**
-     * 將光照值打包到字節陣列中
+     * Pack light value into byte array
      */
     private void packLightValue(byte[] lightData, int byteIndex, int nibbleIndex, int lightValue) {
         if (byteIndex >= 0 && byteIndex < lightData.length) {
             if (nibbleIndex == 0) {
-                // 低4位
+                // Lower 4 bits
                 lightData[byteIndex] = (byte) ((lightData[byteIndex] & ChunkConstants.LIGHT_MASK_HIGH) | 
                                              (lightValue & ChunkConstants.LIGHT_MASK_LOW));
             } else {
-                // 高4位
+                // Upper 4 bits
                 lightData[byteIndex] = (byte) ((lightData[byteIndex] & ChunkConstants.LIGHT_MASK_LOW) | 
                                              ((lightValue & ChunkConstants.LIGHT_MASK_LOW) << ChunkConstants.LIGHT_SHIFT));
             }
@@ -318,7 +318,7 @@ public class LightDataProcessor {
     }
     
     /**
-     * 構建完整的LightData對象
+     * Build complete LightData object
      */
     private LightData buildLightData(byte[][] blockLightArray, byte[][] skyLightArray, int ySections) {
         LightData lightData = new LightData();
@@ -327,12 +327,12 @@ public class LightDataProcessor {
         lightData.setBlockLightCount(ySections);
         lightData.setSkyLightCount(ySections);
         
-        // 設置光照遮罩（所有區段都有光照數據）
+        // Set light mask (all sections have light data)
         BitSet lightMask = createFullBitSet(ySections);
         lightData.setBlockLightMask(lightMask);
         lightData.setSkyLightMask(lightMask);
         
-        // 設置空區段遮罩（沒有空區段）
+        // Set empty section mask (no empty sections)
         BitSet emptyMask = new BitSet(ySections);
         lightData.setEmptyBlockLightMask(emptyMask);
         lightData.setEmptySkyLightMask(emptyMask);
@@ -341,7 +341,7 @@ public class LightDataProcessor {
     }
     
     /**
-     * 創建全滿的BitSet
+     * Create a full BitSet
      */
     private BitSet createFullBitSet(int size) {
         BitSet bitSet = new BitSet(size);
@@ -352,23 +352,23 @@ public class LightDataProcessor {
     }
     
     /**
-     * 驗證輸入參數
+     * Validate input parameters
      */
     private void validateInputParameters(ChunkSnapshot chunkSnapshot, int ySections, int minHeight, int maxHeight) 
             throws ChunkProcessingException {
         if (chunkSnapshot == null) {
-            throw new ChunkProcessingException("區塊快照不能為null");
+            throw new ChunkProcessingException("Chunk snapshot cannot be null");
         }
         if (ySections <= 0) {
-            throw new ChunkProcessingException("Y軸區塊段數量必須大於0，實際值：" + ySections);
+            throw new ChunkProcessingException("Number of Y-axis chunk sections must be greater than 0, actual value: " + ySections);
         }
         if (minHeight >= maxHeight) {
-            throw new ChunkProcessingException("最小高度必須小於最大高度，最小高度：" + minHeight + "，最大高度：" + maxHeight);
+            throw new ChunkProcessingException("Minimum height must be less than maximum height, minimum height: " + minHeight + ", maximum height: " + maxHeight);
         }
     }
     
     /**
-     * 檢查世界Y座標是否有效
+     * Check if world Y coordinate is valid
      */
     private boolean isValidWorldY(int worldY, int minHeight, int maxHeight) {
         return worldY >= minHeight && worldY < maxHeight;
