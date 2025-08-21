@@ -24,7 +24,7 @@ Blocket 是一個開發庫，可以幫助您管理和創建客戶端的虛擬方
 <dependency>
     <groupId>dev.twme</groupId>
     <artifactId>blocket-api</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <scope>compile</scope>
 </dependency>
 ```
@@ -40,7 +40,7 @@ repositories {
     }
 }
 dependencies {
-    implementation 'dev.twme:blocket-api:1.0.0'
+    implementation 'dev.twme:blocket-api:1.1.0'
 }
 ```
 
