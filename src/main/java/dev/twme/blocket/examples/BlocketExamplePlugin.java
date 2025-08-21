@@ -37,6 +37,7 @@ public class BlocketExamplePlugin extends JavaPlugin {
             .enableStageBoundListener(true)
             .enablePacketListeners(true)
             .defaultChunksPerTick(2)
+            .preserveOriginalLighting(true) // 啟用原始光照保留功能
             .build();
             
         blocketAPI = BlocketAPI.initialize(this, config);

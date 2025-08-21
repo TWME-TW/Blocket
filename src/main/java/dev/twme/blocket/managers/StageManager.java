@@ -81,7 +81,16 @@ public class StageManager {
         if (!stages.containsKey(name)) {
             return false;
         }
-        new DeleteStageEvent(stages.get(name)).callEvent();
+        Stage stageToDelete = stages.get(name);
+        
+        // Fire the delete event before cleanup
+        new DeleteStageEvent(stageToDelete).callEvent();
+        
+        // Clear all cached data associated with this stage to prevent memory leaks
+        // and avoid sending stale blocks when new stages are created
+        api.getBlockChangeManager().clearStageCache(stageToDelete);
+        
+        // Remove the stage from registry
         stages.remove(name);
         return true;
     }

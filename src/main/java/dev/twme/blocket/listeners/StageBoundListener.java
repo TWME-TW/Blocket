@@ -49,18 +49,34 @@ import dev.twme.blocket.models.Stage;
  */
 public class StageBoundListener implements Listener {
 
-    private final LoadingCache<UUID, List<Stage>> stageCache = CacheBuilder.newBuilder()
-            .expireAfterWrite(BlocketAPI.getInstance().getConfig().getStageCacheExpirationMinutes(), TimeUnit.MINUTES)
-            .build(new CacheLoader<>() {
-                @Override
-                public @NotNull List<Stage> load(@NotNull UUID playerUUID) {
-                    Player player = Bukkit.getPlayer(playerUUID);
-                    if (player == null) {
-                        return Collections.emptyList();
-                    }
-                    return BlocketAPI.getInstance().getStageManager().getStages(player);
+    private volatile LoadingCache<UUID, List<Stage>> stageCache;
+    private final Object cacheLock = new Object();
+    
+    /**
+     * Get the stage cache, initializing it lazily to avoid circular dependencies
+     * @return The initialized stage cache
+     */
+    private LoadingCache<UUID, List<Stage>> getStageCache() {
+        if (stageCache == null) {
+            synchronized (cacheLock) {
+                if (stageCache == null) {
+                    stageCache = CacheBuilder.newBuilder()
+                            .expireAfterWrite(BlocketAPI.getInstance().getConfig().getStageCacheExpirationMinutes(), TimeUnit.MINUTES)
+                            .build(new CacheLoader<>() {
+                                @Override
+                                public @NotNull List<Stage> load(@NotNull UUID playerUUID) {
+                                    Player player = Bukkit.getPlayer(playerUUID);
+                                    if (player == null) {
+                                        return Collections.emptyList();
+                                    }
+                                    return BlocketAPI.getInstance().getStageManager().getStages(player);
+                                }
+                            });
                 }
-            });
+            }
+        }
+        return stageCache;
+    }
 
     /**
      * Handles player movement events to detect stage boundary crossings.
@@ -88,7 +104,7 @@ public class StageBoundListener implements Listener {
         // Get the cached stages; if not present, this will call the loader.
         List<Stage> stages;
         try {
-            stages = stageCache.get(player.getUniqueId());
+            stages = getStageCache().get(player.getUniqueId());
         } catch (ExecutionException e) {
             return;
         }
@@ -155,6 +171,9 @@ public class StageBoundListener implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         // 主動清理離線玩家的快取，防止記憶體洩漏
-        stageCache.invalidate(event.getPlayer().getUniqueId());
+        LoadingCache<UUID, List<Stage>> cache = getStageCache();
+        if (cache != null) {
+            cache.invalidate(event.getPlayer().getUniqueId());
+        }
     }
 }

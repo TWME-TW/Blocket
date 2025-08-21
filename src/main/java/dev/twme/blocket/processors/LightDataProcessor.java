@@ -90,6 +90,116 @@ public class LightDataProcessor {
     }
     
     /**
+     * 創建合併的光照數據對象
+     * 保留原始區塊的光照數據，同時處理自定義方塊的光照影響
+     *
+     * @param chunkSnapshot 區塊快照
+     * @param customBlockPositions 自定義方塊位置集合（可為null）
+     * @param ySections Y軸區塊段數量
+     * @param minHeight 世界最小高度
+     * @param maxHeight 世界最大高度
+     * @return 合併的LightData對象
+     * @throws ChunkProcessingException 當處理過程中發生錯誤時拋出
+     */
+    public LightData createMergedLightData(
+            ChunkSnapshot chunkSnapshot,
+            java.util.Set<dev.twme.blocket.types.BlocketPosition> customBlockPositions,
+            int ySections,
+            int minHeight,
+            int maxHeight) throws ChunkProcessingException {
+        
+        validateInputParameters(chunkSnapshot, ySections, minHeight, maxHeight);
+        
+        try {
+            // 首先創建基於原始區塊的完整光照數據
+            LightData baseLightData = createLightData(chunkSnapshot, ySections, minHeight, maxHeight);
+            
+            // 如果沒有自定義方塊，直接返回原始光照
+            if (customBlockPositions == null || customBlockPositions.isEmpty()) {
+                return baseLightData;
+            }
+            
+            // 創建修改後的光照數據陣列
+            byte[][] modifiedBlockLightArray = cloneLightArray(baseLightData.getBlockLightArray());
+            byte[][] modifiedSkyLightArray = cloneLightArray(baseLightData.getSkyLightArray());
+            
+            // 處理自定義方塊對光照的影響
+            processCustomBlockLighting(customBlockPositions, modifiedBlockLightArray, modifiedSkyLightArray,
+                                     ySections, minHeight, maxHeight);
+            
+            // 創建並返回修改後的光照數據
+            return buildLightData(modifiedBlockLightArray, modifiedSkyLightArray, ySections);
+            
+        } catch (Exception e) {
+            throw new ChunkProcessingException("創建合併光照數據時發生錯誤", e);
+        }
+    }
+    
+    /**
+     * 複製光照數據陣列
+     */
+    private byte[][] cloneLightArray(byte[][] original) {
+        if (original == null) return null;
+        
+        byte[][] cloned = new byte[original.length][];
+        for (int i = 0; i < original.length; i++) {
+            if (original[i] != null) {
+                cloned[i] = original[i].clone();
+            }
+        }
+        return cloned;
+    }
+    
+    /**
+     * 處理自定義方塊對光照的影響
+     * 這個方法可以根據需要進一步擴展來處理特定方塊類型的光照效果
+     */
+    private void processCustomBlockLighting(
+            java.util.Set<dev.twme.blocket.types.BlocketPosition> customBlockPositions,
+            byte[][] blockLightArray,
+            byte[][] skyLightArray,
+            int ySections,
+            int minHeight,
+            int maxHeight) {
+        
+        // 目前的實現保持原始光照不變
+        // 未來可以在這裡添加特定方塊類型的光照處理邏輯
+        // 例如：發光方塊增加光照值，不透明方塊減少光照傳播等
+        
+        for (dev.twme.blocket.types.BlocketPosition pos : customBlockPositions) {
+            int worldY = pos.getY();
+            
+            // 檢查Y座標是否在有效範圍內
+            if (worldY < minHeight || worldY >= maxHeight) {
+                continue;
+            }
+            
+            // 計算區塊段索引
+            int section = (worldY - minHeight) >> ChunkConstants.SECTION_SHIFT;
+            if (section < 0 || section >= ySections) {
+                continue;
+            }
+            
+            // 計算區塊內座標
+            int localX = pos.getX() & 15;
+            int localY = worldY & 15;
+            int localZ = pos.getZ() & 15;
+            
+            // 計算光照索引
+            int lightIndex = calculateLightIndex(localX, localY, localZ);
+            int byteIndex = lightIndex >> ChunkConstants.BYTE_INDEX_SHIFT;
+            int nibbleIndex = lightIndex & ChunkConstants.NIBBLE_INDEX_MASK;
+            
+            // 這裡可以根據自定義方塊的類型來調整光照
+            // 目前保持原始光照值不變
+            // 未來可以添加：
+            // - 發光方塊：增加方塊光照值
+            // - 不透明方塊：減少天空光照值
+            // - 透明方塊：保持光照傳播
+        }
+    }
+    
+    /**
      * 創建光照數據陣列
      */
     private byte[][] createLightArray(int ySections) {

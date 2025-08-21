@@ -222,7 +222,7 @@ public class ChunkProcessorFactory {
             int maxHeight,
             ChunkProcessingOptions options) throws ChunkProcessingException {
         
-        if (options.isUseEmptyLighting()) {
+        if (options.isUseEmptyLighting() && !options.isPreserveOriginalLighting()) {
             return lightDataProcessor.createEmptyLightData(ySections);
         } else {
             return lightDataProcessor.createLightData(chunkSnapshot, ySections, minHeight, maxHeight);
@@ -278,6 +278,7 @@ public class ChunkProcessorFactory {
     public static class ChunkProcessingOptions {
         private User packetUser;
         private boolean useEmptyLighting = false;
+        private boolean preserveOriginalLighting = false;
         private int biomeId = ChunkConstants.DEFAULT_BIOME_ID;
         
         /**
@@ -295,6 +296,19 @@ public class ChunkProcessorFactory {
          */
         public ChunkProcessingOptions useEmptyLighting(boolean useEmptyLighting) {
             this.useEmptyLighting = useEmptyLighting;
+            return this;
+        }
+
+        /**
+         * Sets whether to preserve original lighting from the chunk.
+         * When enabled, the system will attempt to extract and preserve the original
+         * chunk lighting data instead of creating empty lighting.
+         *
+         * @param preserveOriginalLighting true to preserve original lighting, false otherwise
+         * @return this ChunkProcessingOptions instance
+         */
+        public ChunkProcessingOptions preserveOriginalLighting(boolean preserveOriginalLighting) {
+            this.preserveOriginalLighting = preserveOriginalLighting;
             return this;
         }
 
@@ -322,6 +336,15 @@ public class ChunkProcessorFactory {
          */
         public boolean isUseEmptyLighting() {
             return useEmptyLighting;
+        }
+
+        /**
+         * Checks if original lighting should be preserved for chunk processing.
+         *
+         * @return true if original lighting should be preserved, false otherwise
+         */
+        public boolean isPreserveOriginalLighting() {
+            return preserveOriginalLighting;
         }
 
         /**

@@ -91,6 +91,7 @@ public class BlockChangeManager {
     private final ObjectPool<byte[][]> lightArrayPool;
     private final ObjectPool<AbstractMap.SimpleEntry<BlocketChunk, Map<BlocketPosition, BlockData>>> entryPool;
     private final PerformanceMonitor performanceMonitor;
+    private BukkitTask cacheCleanupTask;
 
     /**
      * Creates a new BlockChangeManager with the specified BlocketAPI instance.
@@ -123,6 +124,107 @@ public class BlockChangeManager {
                     return t;
                 }
         );
+        
+        // Start periodic cache cleanup task to prevent memory leaks
+        startCacheCleanupTask();
+    }
+
+    /**
+     * Starts a periodic task to clean up stale cache entries and prevent memory leaks.
+     * This task runs every 5 minutes and removes empty entries from player caches.
+     */
+    private void startCacheCleanupTask() {
+        cacheCleanupTask = Bukkit.getScheduler().runTaskTimerAsynchronously(api.getOwnerPlugin(), () -> {
+            try {
+                performCacheCleanup();
+            } catch (Exception e) {
+                api.getOwnerPlugin().getLogger().warning("Error during cache cleanup: " + e.getMessage());
+            }
+        }, 6000L, 6000L); // Run every 5 minutes (6000 ticks)
+    }
+
+    /**
+     * Performs cache cleanup by removing empty entries and orphaned data.
+     * This helps prevent memory leaks from accumulating over time.
+     */
+    private void performCacheCleanup() {
+        AtomicInteger removedEntries = new AtomicInteger(0);
+        
+        // Clean up empty player block changes
+        playerBlockChanges.entrySet().removeIf(entry -> {
+            Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerCache = entry.getValue();
+            if (playerCache.isEmpty()) {
+                removedEntries.incrementAndGet();
+                return true;
+            }
+            
+            // Remove empty chunk maps within player cache
+            playerCache.entrySet().removeIf(chunkEntry -> {
+                Map<BlocketPosition, BlockData> chunkMap = chunkEntry.getValue();
+                return chunkMap == null || chunkMap.isEmpty();
+            });
+            
+            return playerCache.isEmpty();
+        });
+        
+        // Clean up empty player view blocks
+        playerViewBlocks.entrySet().removeIf(entry -> {
+            Map<String, Map<BlocketChunk, Set<BlocketPosition>>> viewMap = entry.getValue();
+            if (viewMap.isEmpty()) {
+                return true;
+            }
+            
+            // Remove empty view entries
+            viewMap.entrySet().removeIf(viewEntry -> {
+                Map<BlocketChunk, Set<BlocketPosition>> chunkMap = viewEntry.getValue();
+                if (chunkMap == null || chunkMap.isEmpty()) {
+                    return true;
+                }
+                
+                // Remove empty chunk entries within view
+                chunkMap.entrySet().removeIf(chunkEntry -> {
+                    Set<BlocketPosition> positions = chunkEntry.getValue();
+                    return positions == null || positions.isEmpty();
+                });
+                
+                return chunkMap.isEmpty();
+            });
+            
+            return viewMap.isEmpty();
+        });
+        
+        if (removedEntries.get() > 0) {
+            api.getOwnerPlugin().getLogger().info(String.format("Cache cleanup removed %d empty entries", removedEntries.get()));
+        }
+    }
+
+    /**
+     * Validates cache consistency for a specific player.
+     * This method checks if the player's cache data is consistent and removes any orphaned entries.
+     *
+     * @param playerUUID The UUID of the player to validate cache for
+     */
+    public void validatePlayerCache(UUID playerUUID) {
+        Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerCache = playerBlockChanges.get(playerUUID);
+        Map<String, Map<BlocketChunk, Set<BlocketPosition>>> viewMap = playerViewBlocks.get(playerUUID);
+        
+        if (playerCache == null || viewMap == null) {
+            return;
+        }
+        
+        // Remove chunks from player cache that are not referenced in any view
+        Set<BlocketChunk> referencedChunks = viewMap.values().stream()
+                .flatMap(chunkMap -> chunkMap.keySet().stream())
+                .collect(Collectors.toCollection(ConcurrentHashMap::newKeySet));
+        
+        playerCache.entrySet().removeIf(entry -> {
+            BlocketChunk chunk = entry.getKey();
+            if (!referencedChunks.contains(chunk)) {
+                blockDataCache.remove(chunk);
+                return true;
+            }
+            return false;
+        });
     }
 
     /**
@@ -149,6 +251,91 @@ public class BlockChangeManager {
             playerChanges.keySet().forEach(blockDataCache::remove);
         }
         playerViewBlocks.remove(playerUUID);
+    }
+
+    /**
+     * Clears all cached data associated with a specific stage.
+     * This method removes all player caches that contain blocks from views belonging to the specified stage.
+     * Should be called when a stage is deleted to prevent memory leaks and stale cache data.
+     *
+     * @param stage The stage whose cache data should be cleared
+     */
+    public void clearStageCache(@NonNull Stage stage) {
+        if (stage == null) {
+            return;
+        }
+
+        // Get all view names from the stage
+        Set<String> stageViewNames = stage.getViews().stream()
+                .map(View::getName)
+                .collect(Collectors.toCollection(ConcurrentHashMap::newKeySet));
+        if (stageViewNames.isEmpty()) {
+            return;
+        }
+
+        // Clear cache data for all players
+        playerViewBlocks.forEach((playerUUID, viewMap) -> {
+            // Remove all views belonging to this stage from player's view tracking
+            stageViewNames.forEach(viewName -> {
+                Map<BlocketChunk, Set<BlocketPosition>> removedViewBlocks = viewMap.remove(viewName);
+                if (removedViewBlocks != null) {
+                    // Also remove corresponding blocks from player's block changes cache
+                    Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerCache = playerBlockChanges.get(playerUUID);
+                    if (playerCache != null) {
+                        removedViewBlocks.forEach((chunk, positions) -> {
+                            Map<BlocketPosition, BlockData> chunkMap = playerCache.get(chunk);
+                            if (chunkMap != null) {
+                                positions.forEach(chunkMap::remove);
+                                if (chunkMap.isEmpty()) {
+                                    playerCache.remove(chunk);
+                                }
+                            }
+                            // Clear chunk from cache to force regeneration
+                            blockDataCache.remove(chunk);
+                        });
+                    }
+                }
+            });
+        });
+
+        // Clear any cached chunk data that might belong to this stage
+        // Since we can't directly map chunks to stages, we clear all cache to be safe
+        blockDataCache.clear();
+
+        api.getOwnerPlugin().getLogger().info(String.format("Cleared cache data for stage: %s", stage.getName()));
+    }
+
+    /**
+     * Clears cached data for a specific view across all players.
+     * This method is called when a view is removed from a stage to ensure cache consistency.
+     *
+     * @param viewName The name of the view to clear from caches
+     */
+    public void clearViewCache(@NonNull String viewName) {
+        if (viewName == null || viewName.isEmpty()) {
+            return;
+        }
+
+        playerViewBlocks.forEach((playerUUID, viewMap) -> {
+            Map<BlocketChunk, Set<BlocketPosition>> removedViewBlocks = viewMap.remove(viewName);
+            if (removedViewBlocks != null) {
+                // Also remove corresponding blocks from player's block changes cache
+                Map<BlocketChunk, Map<BlocketPosition, BlockData>> playerCache = playerBlockChanges.get(playerUUID);
+                if (playerCache != null) {
+                    removedViewBlocks.forEach((chunk, positions) -> {
+                        Map<BlocketPosition, BlockData> chunkMap = playerCache.get(chunk);
+                        if (chunkMap != null) {
+                            positions.forEach(chunkMap::remove);
+                            if (chunkMap.isEmpty()) {
+                                playerCache.remove(chunk);
+                            }
+                        }
+                        // Clear chunk from cache to force regeneration
+                        blockDataCache.remove(chunk);
+                    });
+                }
+            }
+        });
     }
 
     /**
@@ -500,7 +687,11 @@ public class BlockChangeManager {
                 return createEmptyChunkPacketData(context);
             }
 
-            ChunkProcessorFactory.ChunkProcessingOptions options = new ChunkProcessorFactory.ChunkProcessingOptions(context.getPacketUser()).useEmptyLighting(true);
+            // 使用配置來決定光照處理策略
+            boolean preserveLighting = api.getConfig().isPreserveOriginalLighting();
+            ChunkProcessorFactory.ChunkProcessingOptions options = new ChunkProcessorFactory.ChunkProcessingOptions(context.getPacketUser())
+                .useEmptyLighting(!preserveLighting)
+                .preserveOriginalLighting(preserveLighting);
             Column column = chunkProcessorFactory.createChunkColumn(context.getPlayer(), context.getChunk(), context.getCustomBlockData(), options);
             LightData lightData = createEmptyLightData(context);
 

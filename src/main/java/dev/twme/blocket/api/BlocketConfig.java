@@ -13,6 +13,7 @@ public class BlocketConfig {
     private final double instantBreakSpeedMultiplier;
     private final long stageCacheExpirationMinutes;
     private final int maxObjectPoolSize;
+    private final boolean preserveOriginalLighting;
     
     /**
      * Private constructor - use builder methods
@@ -29,6 +30,7 @@ public class BlocketConfig {
         this.instantBreakSpeedMultiplier = builder.instantBreakSpeedMultiplier;
         this.stageCacheExpirationMinutes = builder.stageCacheExpirationMinutes;
         this.maxObjectPoolSize = builder.maxObjectPoolSize;
+        this.preserveOriginalLighting = builder.preserveOriginalLighting;
     }
     
     /**
@@ -126,6 +128,17 @@ public class BlocketConfig {
     }
     
     /**
+     * Get preserve original lighting setting
+     * When enabled, the system will attempt to preserve the original chunk lighting
+     * instead of forcing empty lighting that requires client-side recalculation.
+     *
+     * @return true if original lighting should be preserved
+     */
+    public boolean isPreserveOriginalLighting() {
+        return preserveOriginalLighting;
+    }
+    
+    /**
      * Builder class for creating BlocketConfig instances
      * This class implements the Builder pattern for creating immutable configuration objects.
      */
@@ -138,6 +151,7 @@ public class BlocketConfig {
         private double instantBreakSpeedMultiplier = 30.0;
         private long stageCacheExpirationMinutes = 5; // 調優：從1分鐘增加到5分鐘，減少快取未命中
         private int maxObjectPoolSize = 100; // 調優：增加對象池大小以提高重用率
+        private boolean preserveOriginalLighting = true;
         
         /**
          * Private constructor - use BlocketConfig.builder() to get an instance
@@ -259,6 +273,20 @@ public class BlocketConfig {
         }
         
         /**
+         * Set preserve original lighting setting
+         * When enabled, the system will attempt to preserve the original chunk lighting
+         * instead of forcing empty lighting that requires client-side recalculation.
+         * This can help maintain consistent block brightness across different views.
+         *
+         * @param preserve true to preserve original lighting
+         * @return this builder for chaining
+         */
+        public Builder preserveOriginalLighting(boolean preserve) {
+            this.preserveOriginalLighting = preserve;
+            return this;
+        }
+        
+        /**
          * Build the final configuration
          * This method creates an immutable BlocketConfig instance with the current settings
          * and validates all configuration parameters.
@@ -295,6 +323,7 @@ public class BlocketConfig {
             if (maxObjectPoolSize <= 0) {
                 throw new IllegalArgumentException("Max object pool size must be positive");
             }
+            // preserveOriginalLighting 不需要驗證，因為它是布林值
         }
     }
 }

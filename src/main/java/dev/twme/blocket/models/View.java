@@ -160,6 +160,9 @@ public class View {
                 });
             });
             blocks.clear();
+            
+            // Clear view-specific cache data from BlockChangeManager to prevent stale data
+            BlocketAPI.getInstance().getBlockChangeManager().clearViewCache(this.name);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, String.format("Error removing all blocks in view %s", this.name), e);
         }

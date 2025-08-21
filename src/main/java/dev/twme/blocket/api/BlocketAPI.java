@@ -30,6 +30,10 @@ public class BlocketAPI {
     private final ServerVersion serverVersion;
     private final BlocketConfig config;
     
+    // Initialization state tracking
+    private volatile boolean listenersInitialized = false;
+    private final Object initializationLock = new Object();
+    
     // Protocol listeners
     private BlockDigAdapter blockDigAdapter;
     private BlockPlaceAdapter blockPlaceAdapter;
@@ -38,6 +42,7 @@ public class BlocketAPI {
     
     /**
      * Private constructor - use initialize() methods
+     * Phase 1: Core initialization only, no listeners
      */
     private BlocketAPI(Plugin plugin, BlocketConfig config) {
         this.ownerPlugin = plugin;
@@ -48,12 +53,7 @@ public class BlocketAPI {
         this.stageManager = new StageManager(this);
         this.blockChangeManager = new BlockChangeManager(this);
         
-        // Auto-initialize if configured
-        if (config.isAutoInitialize()) {
-            initializeListeners();
-        }
-        
-        plugin.getLogger().info("Blocket API initialized for plugin: " + plugin.getName());
+        plugin.getLogger().info("Blocket API core initialized for plugin: " + plugin.getName());
     }
     
     /**
@@ -69,7 +69,8 @@ public class BlocketAPI {
     
     /**
      * Initialize BlocketAPI with custom configuration
-     * 
+     * Implements two-phase initialization to avoid circular dependencies
+     *
      * @param plugin The plugin that will own this BlocketAPI instance
      * @param config Custom configuration
      * @return BlocketAPI instance
@@ -85,7 +86,13 @@ public class BlocketAPI {
         if (instance == null) {
             synchronized (BlocketAPI.class) {
                 if (instance == null) {
+                    // Phase 1: Create instance and set static reference
                     instance = new BlocketAPI(plugin, config);
+                    
+                    // Phase 2: Complete initialization if auto-initialize is enabled
+                    if (config.isAutoInitialize()) {
+                        instance.completeInitialization();
+                    }
                 }
             }
         }
@@ -120,24 +127,47 @@ public class BlocketAPI {
     }
     
     /**
+     * Complete the initialization process (Phase 2)
+     * This method is called after the static instance is set to avoid circular dependencies
+     */
+    private void completeInitialization() {
+        synchronized (initializationLock) {
+            if (!listenersInitialized) {
+                initializeListeners();
+                listenersInitialized = true;
+                ownerPlugin.getLogger().info("Blocket API listeners initialized for plugin: " + ownerPlugin.getName());
+            }
+        }
+    }
+    
+    /**
      * Initialize all listeners (can be called manually if autoInitialize is false)
      */
     public void initializeListeners() {
-        if (config.isEnablePacketListeners()) {
-            // Initialize packet listeners
-            blockDigAdapter = new BlockDigAdapter();
-            blockPlaceAdapter = new BlockPlaceAdapter();
-            chunkLoadAdapter = new ChunkLoadAdapter();
+        synchronized (initializationLock) {
+            if (listenersInitialized) {
+                ownerPlugin.getLogger().warning("Listeners are already initialized, skipping...");
+                return;
+            }
             
-            PacketEvents.getAPI().getEventManager().registerListeners(
-                blockDigAdapter, blockPlaceAdapter, chunkLoadAdapter
-            );
-        }
-        
-        if (config.isEnableStageBoundListener()) {
-            // Initialize Bukkit event listener
-            stageBoundListener = new StageBoundListener();
-            ownerPlugin.getServer().getPluginManager().registerEvents(stageBoundListener, ownerPlugin);
+            if (config.isEnablePacketListeners()) {
+                // Initialize packet listeners
+                blockDigAdapter = new BlockDigAdapter();
+                blockPlaceAdapter = new BlockPlaceAdapter();
+                chunkLoadAdapter = new ChunkLoadAdapter();
+                
+                PacketEvents.getAPI().getEventManager().registerListeners(
+                    blockDigAdapter, blockPlaceAdapter, chunkLoadAdapter
+                );
+            }
+            
+            if (config.isEnableStageBoundListener()) {
+                // Initialize Bukkit event listener
+                stageBoundListener = new StageBoundListener();
+                ownerPlugin.getServer().getPluginManager().registerEvents(stageBoundListener, ownerPlugin);
+            }
+            
+            listenersInitialized = true;
         }
     }
     
