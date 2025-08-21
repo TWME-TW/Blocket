@@ -20,7 +20,7 @@ public final class ChunkConstants {
     /** 區塊段高度（每個區塊段的方塊數量） */
     public static final int CHUNK_SECTION_HEIGHT = 16;
     
-    /** 位移操作常數：用於計算區塊段索引 (section << 4) */
+    /** 位移操作常數：用於計算區塊段索引 {@code (section << 4)} */
     public static final int SECTION_SHIFT = 4;
     
     // 光照數據相關常數

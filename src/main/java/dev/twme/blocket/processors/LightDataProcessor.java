@@ -23,9 +23,9 @@ import dev.twme.blocket.exceptions.ChunkProcessingException;
  * 
  * <p>光照數據格式說明：
  * 每個光照值佔4位（0-15），兩個光照值打包為一個字節。
- * 索引計算：index = y << 8 | z << 4 | x
- * 字節索引：byteIndex = index >> 1
- * 半字節索引：nibbleIndex = index & 1
+ * 索引計算：{@code index = y << 8 | z << 4 | x}
+ * 字節索引：{@code byteIndex = index >> 1}
+ * 半字節索引：{@code nibbleIndex = index & 1}
  * 
  * @author TWME-TW
  * @version 1.0.0
