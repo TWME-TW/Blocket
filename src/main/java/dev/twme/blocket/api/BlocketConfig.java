@@ -10,6 +10,9 @@ public class BlocketConfig {
     private final boolean enablePacketListeners;
     private final int defaultChunksPerTick;
     private final int blockCacheSize;
+    private final double instantBreakSpeedMultiplier;
+    private final long stageCacheExpirationMinutes;
+    private final int maxObjectPoolSize;
     
     /**
      * Private constructor - use builder methods
@@ -23,6 +26,9 @@ public class BlocketConfig {
         this.enablePacketListeners = builder.enablePacketListeners;
         this.defaultChunksPerTick = builder.defaultChunksPerTick;
         this.blockCacheSize = builder.blockCacheSize;
+        this.instantBreakSpeedMultiplier = builder.instantBreakSpeedMultiplier;
+        this.stageCacheExpirationMinutes = builder.stageCacheExpirationMinutes;
+        this.maxObjectPoolSize = builder.maxObjectPoolSize;
     }
     
     /**
@@ -89,6 +95,37 @@ public class BlocketConfig {
     }
     
     /**
+     * Get instant break speed multiplier setting
+     * This multiplier determines when a block can be instantly broken.
+     * If break speed is at least (hardness * multiplier), it's an instant break.
+     *
+     * @return instant break speed multiplier
+     */
+    public double getInstantBreakSpeedMultiplier() {
+        return instantBreakSpeedMultiplier;
+    }
+    
+    /**
+     * Get stage cache expiration time in minutes
+     * This determines how long stage information is cached for players.
+     *
+     * @return stage cache expiration time in minutes
+     */
+    public long getStageCacheExpirationMinutes() {
+        return stageCacheExpirationMinutes;
+    }
+    
+    /**
+     * Get maximum object pool size
+     * This determines the maximum number of objects that can be pooled.
+     *
+     * @return maximum object pool size
+     */
+    public int getMaxObjectPoolSize() {
+        return maxObjectPoolSize;
+    }
+    
+    /**
      * Builder class for creating BlocketConfig instances
      * This class implements the Builder pattern for creating immutable configuration objects.
      */
@@ -98,6 +135,9 @@ public class BlocketConfig {
         private boolean enablePacketListeners = true;
         private int defaultChunksPerTick = 1;
         private int blockCacheSize = 1000;
+        private double instantBreakSpeedMultiplier = 30.0;
+        private long stageCacheExpirationMinutes = 5; // 調優：從1分鐘增加到5分鐘，減少快取未命中
+        private int maxObjectPoolSize = 100; // 調優：增加對象池大小以提高重用率
         
         /**
          * Private constructor - use BlocketConfig.builder() to get an instance
@@ -170,6 +210,55 @@ public class BlocketConfig {
         }
         
         /**
+         * Set instant break speed multiplier
+         * This multiplier determines when a block can be instantly broken.
+         * If break speed is at least (hardness * multiplier), it's an instant break.
+         *
+         * @param multiplier instant break speed multiplier
+         * @return this builder for chaining
+         * @throws IllegalArgumentException if multiplier is not positive
+         */
+        public Builder instantBreakSpeedMultiplier(double multiplier) {
+            if (multiplier <= 0) {
+                throw new IllegalArgumentException("Instant break speed multiplier must be positive");
+            }
+            this.instantBreakSpeedMultiplier = multiplier;
+            return this;
+        }
+        
+        /**
+         * Set stage cache expiration time in minutes
+         * This determines how long stage information is cached for players.
+         *
+         * @param minutes stage cache expiration time in minutes
+         * @return this builder for chaining
+         * @throws IllegalArgumentException if minutes is not positive
+         */
+        public Builder stageCacheExpirationMinutes(long minutes) {
+            if (minutes <= 0) {
+                throw new IllegalArgumentException("Stage cache expiration minutes must be positive");
+            }
+            this.stageCacheExpirationMinutes = minutes;
+            return this;
+        }
+        
+        /**
+         * Set maximum object pool size
+         * This determines the maximum number of objects that can be pooled.
+         *
+         * @param size maximum object pool size
+         * @return this builder for chaining
+         * @throws IllegalArgumentException if size is not positive
+         */
+        public Builder maxObjectPoolSize(int size) {
+            if (size <= 0) {
+                throw new IllegalArgumentException("Max object pool size must be positive");
+            }
+            this.maxObjectPoolSize = size;
+            return this;
+        }
+        
+        /**
          * Build the final configuration
          * This method creates an immutable BlocketConfig instance with the current settings
          * and validates all configuration parameters.
@@ -196,6 +285,15 @@ public class BlocketConfig {
             }
             if (blockCacheSize <= 0) {
                 throw new IllegalArgumentException("Cache size must be positive");
+            }
+            if (instantBreakSpeedMultiplier <= 0) {
+                throw new IllegalArgumentException("Instant break speed multiplier must be positive");
+            }
+            if (stageCacheExpirationMinutes <= 0) {
+                throw new IllegalArgumentException("Stage cache expiration minutes must be positive");
+            }
+            if (maxObjectPoolSize <= 0) {
+                throw new IllegalArgumentException("Max object pool size must be positive");
             }
         }
     }

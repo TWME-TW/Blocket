@@ -87,6 +87,9 @@ public class BlockChangeManager {
     private final ObjectPool<Map<BlocketPosition, BlockData>> blockDataMapPool;
     private final ObjectPool<List<BaseChunk>> chunkListPool;
     private final ObjectPool<byte[]> lightDataArrayPool;
+    private final ObjectPool<BitSet> bitSetPool;
+    private final ObjectPool<byte[][]> lightArrayPool;
+    private final ObjectPool<AbstractMap.SimpleEntry<BlocketChunk, Map<BlocketPosition, BlockData>>> entryPool;
     private final PerformanceMonitor performanceMonitor;
 
     /**
@@ -99,9 +102,15 @@ public class BlockChangeManager {
         this.api = api;
         this.blockDataCache = new LRUCache<>(api.getConfig().getBlockCacheSize());
         this.chunkProcessorFactory = new ChunkProcessorFactory();
-        this.blockDataMapPool = new ObjectPool<>(HashMap::new, 50);
-        this.chunkListPool = new ObjectPool<>(ArrayList::new, 20);
-        this.lightDataArrayPool = new ObjectPool<>(() -> new byte[2048], 100);
+        // 使用配置化的對象池大小，提高效能調優的靈活性
+        int maxPoolSize = api.getConfig().getMaxObjectPoolSize();
+        this.blockDataMapPool = new ObjectPool<>(HashMap::new, maxPoolSize / 2);
+        this.chunkListPool = new ObjectPool<>(ArrayList::new, maxPoolSize / 5);
+        this.lightDataArrayPool = new ObjectPool<>(() -> new byte[2048], maxPoolSize);
+        // 擴展對象池支援：為更多重複創建的對象添加池化，使用配置化大小
+        this.bitSetPool = new ObjectPool<>(() -> new BitSet(32), maxPoolSize / 3);
+        this.lightArrayPool = new ObjectPool<>(() -> new byte[32][2048], maxPoolSize / 5);
+        this.entryPool = new ObjectPool<>(() -> new AbstractMap.SimpleEntry<>(null, null), maxPoolSize / 2);
         this.performanceMonitor = new PerformanceMonitor();
         this.executorService = new ThreadPoolExecutor(
                 0,
@@ -301,16 +310,24 @@ public class BlockChangeManager {
                     Bukkit.getScheduler().runTask(api.getOwnerPlugin(), () -> new OnBlockChangeSendEvent(stage, blockChanges).callEvent());
 
                     AtomicInteger chunkIndex = new AtomicInteger(0);
+                    
+                    // 線程安全：在添加新任務前檢查並取消現有任務，防止任務覆蓋和洩漏
+                    UUID playerUUID = player.getUniqueId();
+                    BukkitTask existingTask = blockChangeTasks.get(playerUUID);
+                    if (existingTask != null && !existingTask.isCancelled()) {
+                        existingTask.cancel();
+                    }
+                    
                     BukkitTask task = Bukkit.getScheduler().runTaskTimer(api.getOwnerPlugin(), () -> {
                         if (chunkIndex.get() >= chunkList.size()) {
-                            cancelTask(player.getUniqueId());
+                            cancelTask(playerUUID);
                             return;
                         }
                         for (int i = 0; i < stage.getChunksPerTick() && chunkIndex.get() < chunkList.size(); i++) {
                             sendChunkPacket(player, chunkList.get(chunkIndex.getAndIncrement()), unload);
                         }
                     }, 0L, 1L);
-                    blockChangeTasks.put(player.getUniqueId(), task);
+                    blockChangeTasks.put(playerUUID, task);
                 });
     }
 
@@ -364,19 +381,71 @@ public class BlockChangeManager {
      * @param chunk The chunk to process
      * @param unload Whether this is an unload operation
      */
+    /**
+     * 處理並發送區塊封包的主要方法
+     * 已重構為更小的方法以降低複雜度和提高可維護性
+     *
+     * @param player 目標玩家
+     * @param chunk 要處理的區塊
+     * @param unload 是否為卸載操作
+     */
     private void processAndSendChunk(Player player, BlocketChunk chunk, boolean unload) {
         try (PerformanceMonitor.Timer timer = performanceMonitor.startTimer("processAndSendChunk")) {
-            validateChunkProcessingInputs(player, chunk);
-            ChunkProcessingContext context = createProcessingContext(player, chunk, unload);
-            ChunkPacketData packetData = createChunkPacketData(context);
-            sendChunkPackets(context.getPacketUser(), chunk, packetData);
+            executeChunkProcessingPipeline(player, chunk, unload);
         } catch (ChunkProcessingException e) {
-            performanceMonitor.incrementCounter("chunkProcessingErrors");
-            handleChunkProcessingError(player, chunk, e);
+            handleKnownChunkProcessingError(player, chunk, e);
         } catch (Exception e) {
-            performanceMonitor.incrementCounter("unexpectedErrors");
-            handleUnexpectedError(player, chunk, e);
+            handleUnknownChunkProcessingError(player, chunk, e);
         }
+    }
+
+    /**
+     * 執行區塊處理管道的所有步驟
+     * 將複雜的處理邏輯分解為清晰的步驟
+     *
+     * @param player 目標玩家
+     * @param chunk 要處理的區塊
+     * @param unload 是否為卸載操作
+     * @throws ChunkProcessingException 如果處理過程中發生錯誤
+     */
+    private void executeChunkProcessingPipeline(Player player, BlocketChunk chunk, boolean unload) throws ChunkProcessingException {
+        // 步驟 1: 驗證輸入參數
+        validateChunkProcessingInputs(player, chunk);
+        
+        // 步驟 2: 創建處理上下文
+        ChunkProcessingContext context = createProcessingContext(player, chunk, unload);
+        
+        // 步驟 3: 創建區塊封包數據
+        ChunkPacketData packetData = createChunkPacketData(context);
+        
+        // 步驟 4: 發送封包給客戶端
+        sendChunkPackets(context.getPacketUser(), chunk, packetData);
+    }
+
+    /**
+     * 處理已知的區塊處理異常
+     * 分離異常處理邏輯以提高代碼清晰度
+     *
+     * @param player 相關玩家
+     * @param chunk 相關區塊
+     * @param e 區塊處理異常
+     */
+    private void handleKnownChunkProcessingError(Player player, BlocketChunk chunk, ChunkProcessingException e) {
+        performanceMonitor.incrementCounter("chunkProcessingErrors");
+        handleChunkProcessingError(player, chunk, e);
+    }
+
+    /**
+     * 處理未知的區塊處理異常
+     * 分離異常處理邏輯以提高代碼清晰度
+     *
+     * @param player 相關玩家
+     * @param chunk 相關區塊
+     * @param e 未預期的異常
+     */
+    private void handleUnknownChunkProcessingError(Player player, BlocketChunk chunk, Exception e) {
+        performanceMonitor.incrementCounter("unexpectedErrors");
+        handleUnexpectedError(player, chunk, e);
     }
 
     /**

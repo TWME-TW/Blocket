@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.jetbrains.annotations.NotNull;
 
 import com.google.common.cache.CacheBuilder;
@@ -49,7 +50,7 @@ import dev.twme.blocket.models.Stage;
 public class StageBoundListener implements Listener {
 
     private final LoadingCache<UUID, List<Stage>> stageCache = CacheBuilder.newBuilder()
-            .expireAfterWrite(1, TimeUnit.MINUTES)
+            .expireAfterWrite(BlocketAPI.getInstance().getConfig().getStageCacheExpirationMinutes(), TimeUnit.MINUTES)
             .build(new CacheLoader<>() {
                 @Override
                 public @NotNull List<Stage> load(@NotNull UUID playerUUID) {
@@ -138,5 +139,22 @@ public class StageBoundListener implements Listener {
         if (event.getStage().isLocationWithin(event.getPlayer().getLocation())) {
             new PlayerExitStageEvent(event.getStage(), event.getPlayer()).callEvent();
         }
+    }
+
+    /**
+     * Handles player quit events to prevent memory leaks by clearing cached stage data.
+     * This method is triggered when a player disconnects from the server and ensures
+     * that the player's cached stage information is immediately removed from memory.
+     *
+     * <p>Without this cleanup, player UUIDs would remain in the cache until the
+     * configured expiration time (1 minute), potentially causing memory leaks
+     * on servers with frequent player connections/disconnections.</p>
+     *
+     * @param event The PlayerQuitEvent containing information about the disconnecting player
+     */
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        // 主動清理離線玩家的快取，防止記憶體洩漏
+        stageCache.invalidate(event.getPlayer().getUniqueId());
     }
 }

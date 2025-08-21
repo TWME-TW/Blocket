@@ -3,6 +3,8 @@ package dev.twme.blocket.models;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
@@ -30,12 +32,34 @@ import lombok.Setter;
 @Getter
 @Setter
 public class View {
+    private static final Logger LOGGER = Logger.getLogger(View.class.getName());
+    
     private final Map<BlocketChunk, Map<BlocketPosition, BlockData>> blocks;
     private Stage stage;
     private final String name;
     private int zIndex;
     private boolean breakable, placeable;
     private Pattern pattern;
+
+    /**
+     * 工具方法：安全地為所有觀眾應用方塊變更，包含異常處理
+     * 消除重複的玩家遍歷邏輯，提高代碼可維護性
+     *
+     * @param chunk 方塊所在的區塊
+     * @param position 方塊位置
+     * @param blockData 方塊數據，null 表示移除方塊
+     * @param operation 操作描述，用於日誌記錄
+     */
+    private void applyBlockChangeToViewers(BlocketChunk chunk, BlocketPosition position, BlockData blockData, String operation) {
+        for (Player viewer : stage.getAudience().getOnlinePlayers()) {
+            try {
+                BlocketAPI.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, blockData, this.name);
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, String.format("Failed to apply %s for player %s at position %s in view %s",
+                    operation, viewer.getName(), position, this.name), e);
+            }
+        }
+    }
 
     /**
      * Creates a new View with the specified parameters.
@@ -97,15 +121,17 @@ public class View {
      * @param position The position of the block to remove
      */
     public void removeBlock(@NonNull BlocketPosition position) {
-        BlocketChunk chunk = position.toBlocketChunk();
-        Map<BlocketPosition, BlockData> chunkMap = blocks.get(chunk);
-        if (chunkMap != null && chunkMap.remove(position) != null && chunkMap.isEmpty()) {
-            blocks.remove(chunk);
-        }
+        try {
+            BlocketChunk chunk = position.toBlocketChunk();
+            Map<BlocketPosition, BlockData> chunkMap = blocks.get(chunk);
+            if (chunkMap != null && chunkMap.remove(position) != null && chunkMap.isEmpty()) {
+                blocks.remove(chunk);
+            }
 
-        // Also update each viewer's cache: data = null means remove the block
-        for (Player viewer : stage.getAudience().getOnlinePlayers()) {
-            BlocketAPI.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, null, this.name);
+            // Also update each viewer's cache: data = null means remove the block
+            applyBlockChangeToViewers(chunk, position, null, "block removal");
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, String.format("Error removing block at position %s in view %s", position, this.name), e);
         }
     }
 
@@ -124,17 +150,19 @@ public class View {
      * Updates the block change cache for all viewers to reflect the removal.
      */
     public void removeAllBlocks() {
-        // Removing all blocks in bulk, update caches accordingly
-        blocks.forEach((chunk, chunkMap) -> {
-            if (chunkMap == null) return;
-            chunkMap.keySet().forEach(position -> {
-                // Apply removal to each viewer
-                for (Player viewer : stage.getAudience().getOnlinePlayers()) {
-                    BlocketAPI.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, null, this.name);
-                }
+        try {
+            // Removing all blocks in bulk, update caches accordingly
+            blocks.forEach((chunk, chunkMap) -> {
+                if (chunkMap == null) return;
+                chunkMap.keySet().forEach(position -> {
+                    // Apply removal to each viewer
+                    applyBlockChangeToViewers(chunk, position, null, "bulk block removal");
+                });
             });
-        });
-        blocks.clear();
+            blocks.clear();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, String.format("Error removing all blocks in view %s", this.name), e);
+        }
     }
 
     /**
@@ -144,13 +172,20 @@ public class View {
      * @param position The position where the block should be added
      */
     public void addBlock(@NonNull BlocketPosition position) {
-        BlockData newData = pattern.getRandomBlockData();
-        BlocketChunk chunk = position.toBlocketChunk();
-        blocks.computeIfAbsent(chunk, c -> new ConcurrentHashMap<>()).put(position, newData);
+        try {
+            BlockData newData = pattern.getRandomBlockData();
+            if (newData == null) {
+                LOGGER.log(Level.WARNING, String.format("Pattern returned null block data for position %s in view %s", position, this.name));
+                return;
+            }
+            
+            BlocketChunk chunk = position.toBlocketChunk();
+            blocks.computeIfAbsent(chunk, c -> new ConcurrentHashMap<>()).put(position, newData);
 
-        // Update each viewer's cache with the new block
-        for (Player viewer : stage.getAudience().getOnlinePlayers()) {
-            BlocketAPI.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, newData, this.name);
+            // Update each viewer's cache with the new block
+            applyBlockChangeToViewers(chunk, position, newData, "block addition");
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, String.format("Error adding block at position %s in view %s", position, this.name), e);
         }
     }
 
@@ -226,14 +261,16 @@ public class View {
      * @param blockData The block data to set
      */
     public void setBlock(@NonNull BlocketPosition position, @NonNull BlockData blockData) {
-        if (hasBlock(position)) {
-            BlocketChunk chunk = position.toBlocketChunk();
-            blocks.get(chunk).put(position, blockData);
+        try {
+            if (hasBlock(position)) {
+                BlocketChunk chunk = position.toBlocketChunk();
+                blocks.get(chunk).put(position, blockData);
 
-            // Update each viewer's cache with the updated block
-            for (Player viewer : stage.getAudience().getOnlinePlayers()) {
-                BlocketAPI.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, blockData, this.name);
+                // Update each viewer's cache with the updated block
+                applyBlockChangeToViewers(chunk, position, blockData, "block update");
             }
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, String.format("Error setting block at position %s in view %s", position, this.name), e);
         }
     }
 
@@ -244,15 +281,22 @@ public class View {
      * @param position The position of the block to reset
      */
     public void resetBlock(@NonNull BlocketPosition position) {
-        if (hasBlock(position)) {
-            BlockData newData = pattern.getRandomBlockData();
-            BlocketChunk chunk = position.toBlocketChunk();
-            blocks.get(chunk).put(position, newData);
+        try {
+            if (hasBlock(position)) {
+                BlockData newData = pattern.getRandomBlockData();
+                if (newData == null) {
+                    LOGGER.log(Level.WARNING, String.format("Pattern returned null block data for position %s in view %s", position, this.name));
+                    return;
+                }
+                
+                BlocketChunk chunk = position.toBlocketChunk();
+                blocks.get(chunk).put(position, newData);
 
-            // Update viewers
-            for (Player viewer : stage.getAudience().getOnlinePlayers()) {
-                BlocketAPI.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, newData, this.name);
+                // Update viewers
+                applyBlockChangeToViewers(chunk, position, newData, "block reset");
             }
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, String.format("Error resetting block at position %s in view %s", position, this.name), e);
         }
     }
 
@@ -271,16 +315,27 @@ public class View {
      * Updates the block change cache for all viewers to reflect the changes.
      */
     public void resetViewBlocks() {
-        blocks.forEach((chunk, chunkMap) -> {
-            chunkMap.keySet().forEach(position -> {
-                BlockData newData = pattern.getRandomBlockData();
-                chunkMap.put(position, newData);
-                // Update viewers
-                for (Player viewer : stage.getAudience().getOnlinePlayers()) {
-                    BlocketAPI.getInstance().getBlockChangeManager().applyBlockChange(viewer, chunk, position, newData, this.name);
-                }
+        try {
+            blocks.forEach((chunk, chunkMap) -> {
+                chunkMap.keySet().forEach(position -> {
+                    try {
+                        BlockData newData = pattern.getRandomBlockData();
+                        if (newData == null) {
+                            LOGGER.log(Level.WARNING, String.format("Pattern returned null block data for position %s in view %s", position, this.name));
+                            return;
+                        }
+                        
+                        chunkMap.put(position, newData);
+                        // Update viewers
+                        applyBlockChangeToViewers(chunk, position, newData, "view blocks reset");
+                    } catch (Exception e) {
+                        LOGGER.log(Level.WARNING, String.format("Error resetting block at position %s in view %s", position, this.name), e);
+                    }
+                });
             });
-        });
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, String.format("Error resetting all blocks in view %s", this.name), e);
+        }
     }
 
     /**
