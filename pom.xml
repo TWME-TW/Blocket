@@ -110,8 +110,8 @@
 
     <distributionManagement>
         <repository>
-            <id>twme-repo-snapshots</id>
-            <url>https://repo.twme.dev/snapshots</url>
+            <id>twme-repo-releases</id>
+            <url>https://repo.twme.dev/releases</url>
         </repository>
     </distributionManagement>
 </project>
