@@ -17,8 +17,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
-import org.bukkit.ChunkSnapshot;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
@@ -28,20 +26,23 @@ import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
 import com.github.retrooper.packetevents.protocol.world.chunk.Column;
 import com.github.retrooper.packetevents.protocol.world.chunk.LightData;
-import com.github.retrooper.packetevents.protocol.world.chunk.impl.v_1_18.Chunk_v1_18;
-import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChunkData;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerUnloadChunk;
 
 import dev.twme.blocket.api.BlocketAPI;
 import dev.twme.blocket.events.OnBlockChangeSendEvent;
+import dev.twme.blocket.exceptions.ChunkProcessingException;
 import dev.twme.blocket.models.Audience;
 import dev.twme.blocket.models.Stage;
 import dev.twme.blocket.models.View;
+import dev.twme.blocket.processors.ChunkPacketData;
+import dev.twme.blocket.processors.ChunkProcessingContext;
+import dev.twme.blocket.processors.ChunkProcessorFactory;
 import dev.twme.blocket.types.BlocketChunk;
 import dev.twme.blocket.types.BlocketPosition;
 import dev.twme.blocket.utils.LRUCache;
-import io.github.retrooper.packetevents.util.SpigotConversionUtil;
+import dev.twme.blocket.utils.ObjectPool;
+import dev.twme.blocket.utils.PerformanceMonitor;
 import io.papermc.paper.math.Position;
 import lombok.Getter;
 
@@ -72,8 +73,8 @@ public class BlockChangeManager {
     private final BlocketAPI api;
     private final ConcurrentHashMap<UUID, BukkitTask> blockChangeTasks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<BlockData, Integer> blockDataToId = new ConcurrentHashMap<>();
-    // 使用固定大小的線程池替代緩存線程池，避免創建過多線程
-    // 設置為守護線程，確保在插件關閉時能正確終止
+    // Use a fixed-size thread pool to limit the number of concurrent tasks
+    // Set as daemon threads to ensure they terminate correctly when the plugin is disabled
     private final ExecutorService executorService = Executors.newFixedThreadPool(
         Runtime.getRuntime().availableProcessors() * 2,
         r -> {
@@ -95,6 +96,17 @@ public class BlockChangeManager {
     
     // LRU cache for block data
     private final LRUCache<BlocketChunk, Map<BlocketPosition, BlockData>> blockDataCache;
+    
+    // 區塊處理器工廠，用於創建和處理區塊數據
+    private ChunkProcessorFactory chunkProcessorFactory;
+    
+    // 對象池，用於重用昂貴的對象
+    private final ObjectPool<Map<BlocketPosition, BlockData>> blockDataMapPool;
+    private final ObjectPool<List<BaseChunk>> chunkListPool;
+    private final ObjectPool<byte[]> lightDataArrayPool;
+    
+    // 性能監控器
+    private final PerformanceMonitor performanceMonitor;
 
     /**
      * Creates a new BlockChangeManager with the specified BlocketAPI instance.
@@ -105,6 +117,15 @@ public class BlockChangeManager {
     public BlockChangeManager(BlocketAPI api) {
         this.api = api;
         this.blockDataCache = new LRUCache<>(api.getConfig().getBlockCacheSize());
+        this.chunkProcessorFactory = new ChunkProcessorFactory();
+        
+        // 初始化對象池
+        this.blockDataMapPool = new ObjectPool<>(HashMap::new, 50);
+        this.chunkListPool = new ObjectPool<>(ArrayList::new, 20);
+        this.lightDataArrayPool = new ObjectPool<>(() -> new byte[2048], 100);
+        
+        // 初始化性能監控器
+        this.performanceMonitor = new PerformanceMonitor();
     }
 
     /**
@@ -353,149 +374,259 @@ public class BlockChangeManager {
         executorService.submit(() -> processAndSendChunk(player, chunk, unload));
     }
 
+    /**
+     * 處理並發送區塊數據包
+     * 重構後的主方法，將複雜邏輯拆分為多個小方法
+     *
+     * @param player 目標玩家
+     * @param chunk 要處理的區塊
+     * @param unload 是否為卸載操作
+     */
     private void processAndSendChunk(Player player, BlocketChunk chunk, boolean unload) {
+        try (PerformanceMonitor.Timer timer = performanceMonitor.startTimer("processAndSendChunk")) {
+            // 驗證輸入參數
+            validateChunkProcessingInputs(player, chunk);
+            
+            // 獲取基本信息
+            ChunkProcessingContext context = createProcessingContext(player, chunk, unload);
+            
+            // 創建區塊數據包
+            ChunkPacketData packetData = createChunkPacketData(context);
+            
+            // 發送數據包
+            sendChunkPackets(context.getPacketUser(), chunk, packetData);
+            
+        } catch (ChunkProcessingException e) {
+            performanceMonitor.incrementCounter("chunkProcessingErrors");
+            handleChunkProcessingError(player, chunk, e);
+        } catch (Exception e) {
+            performanceMonitor.incrementCounter("unexpectedErrors");
+            handleUnexpectedError(player, chunk, e);
+        }
+    }
+    
+    /**
+     * 驗證區塊處理的輸入參數
+     *
+     * @param player 玩家
+     * @param chunk 區塊
+     * @throws ChunkProcessingException 當參數無效時拋出
+     */
+    private void validateChunkProcessingInputs(Player player, BlocketChunk chunk) throws ChunkProcessingException {
+        if (player == null) {
+            throw new ChunkProcessingException("玩家不能為null");
+        }
+        if (chunk == null) {
+            throw new ChunkProcessingException("區塊不能為null");
+        }
+        if (!player.isOnline()) {
+            throw new ChunkProcessingException("玩家必須在線上");
+        }
+        if (player.getWorld() == null) {
+            throw new ChunkProcessingException("玩家世界不能為null");
+        }
+    }
+    
+    /**
+     * 創建區塊處理上下文
+     *
+     * @param player 玩家
+     * @param chunk 區塊
+     * @param unload 是否為卸載操作
+     * @return 處理上下文
+     * @throws ChunkProcessingException 當創建上下文失敗時拋出
+     */
+    private ChunkProcessingContext createProcessingContext(Player player, BlocketChunk chunk, boolean unload)
+            throws ChunkProcessingException {
         try {
             User packetUser = PacketEvents.getAPI().getPlayerManager().getUser(player);
-            int ySections = packetUser.getTotalWorldHeight() >> 4;
-            Map<BlocketPosition, BlockData> blockData = null;
-
+            if (packetUser == null) {
+                throw new ChunkProcessingException("無法獲取玩家的PacketUser");
+            }
+            
+            Map<BlocketPosition, BlockData> customBlockData = null;
             if (!unload) {
-                blockData = getBlockChangesForPlayer(player, Collections.singleton(chunk)).get(chunk);
-            }
-
-            Map<BlockData, WrappedBlockState> blockDataToState = new HashMap<>();
-            List<BaseChunk> chunks = new ArrayList<>(ySections);
-            Chunk bukkitChunk = player.getWorld().getChunkAt(chunk.x(), chunk.z());
-            ChunkSnapshot chunkSnapshot = bukkitChunk.getChunkSnapshot();
-            int maxHeight = player.getWorld().getMaxHeight();
-            int minHeight = player.getWorld().getMinHeight();
-
-            BlockData[][][][] defaultBlockData = new BlockData[ySections][16][16][16];
-            for (int section = 0; section < ySections; section++) {
-                int baseY = (section << 4) + minHeight;
-                for (int x = 0; x < 16; x++) {
-                    for (int y = 0; y < 16; y++) {
-                        int worldY = baseY + y;
-                        if (worldY >= minHeight && worldY < maxHeight) {
-                            for (int z = 0; z < 16; z++) {
-                                defaultBlockData[section][x][y][z] = chunkSnapshot.getBlockData(x, worldY, z);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Use empty light data to let the client calculate lighting naturally
-            byte[][] emptyLightArray = new byte[ySections][];
-            BitSet emptyBitSet = new BitSet(ySections);
-            for (int i = 0; i < ySections; i++) {
-                emptyLightArray[i] = new byte[2048]; // All zeros, no light data provided
-                emptyBitSet.set(i); // Mark as empty to let client handle lighting
-            }
-            BitSet fullBitSet = new BitSet(ySections); // Empty bit set
-
-            for (int section = 0; section < ySections; section++) {
-                Chunk_v1_18 baseChunk = new Chunk_v1_18();
-
-                long baseY = (section << 4) + minHeight;
-                for (int x = 0; x < 16; x++) {
-                    for (int y = 0; y < 16; y++) {
-                        long worldY = baseY + y;
-                        if (worldY >= minHeight && worldY < maxHeight) {
-                            for (int z = 0; z < 16; z++) {
-                                BlockData data = null;
-                                BlocketPosition position = new BlocketPosition(x + (chunk.x() << 4),
-                                        (section << 4) + y + minHeight, z + (chunk.z() << 4));
-
-                                if (!unload && blockData != null) {
-                                    data = blockData.get(position);
-                                }
-
-                                if (data == null) {
-                                    data = defaultBlockData[section][x][y][z];
-                                }
-
-                                WrappedBlockState state = blockDataToState.computeIfAbsent(data, SpigotConversionUtil::fromBukkitBlockData);
-                                baseChunk.set(x, y, z, state);
-                            }
-                        }
-                    }
-                }
-
-                int biomeId = baseChunk.getBiomeData().palette.stateToId(1);
-                int storageSize = baseChunk.getBiomeData().storage.getData().length;
-                for (int index = 0; index < storageSize; index++) {
-                    baseChunk.getBiomeData().storage.set(index, biomeId);
-                }
-
-                chunks.add(baseChunk);
-            }
-
-            // Create light data arrays
-            byte[][] blockLightArray = new byte[ySections][];
-            byte[][] skyLightArray = new byte[ySections][];
-            
-            // Initialize light data arrays
-            for (int i = 0; i < ySections; i++) {
-                blockLightArray[i] = new byte[2048];
-                skyLightArray[i] = new byte[2048];
+                customBlockData = getBlockChangesForPlayer(player, Collections.singleton(chunk)).get(chunk);
             }
             
-            // Populate light data from chunk snapshot
-            for (int section = 0; section < ySections; section++) {
-                int baseY = (section << 4) + minHeight;
-                for (int x = 0; x < 16; x++) {
-                    for (int y = 0; y < 16; y++) {
-                        int worldY = baseY + y;
-                        if (worldY >= minHeight && worldY < maxHeight) {
-                            for (int z = 0; z < 16; z++) {
-                                int blockLight = chunkSnapshot.getBlockEmittedLight(x, worldY, z);
-                                int skyLight = chunkSnapshot.getBlockSkyLight(x, worldY, z);
-                                
-                                // Pack light data into the array
-                                int index = y << 8 | z << 4 | x;
-                                int byteIndex = index >> 1;
-                                int nibbleIndex = index & 1;
-                                
-                                if (nibbleIndex == 0) {
-                                    blockLightArray[section][byteIndex] = (byte) ((blockLightArray[section][byteIndex] & 0xF0) | (blockLight & 0xF));
-                                    skyLightArray[section][byteIndex] = (byte) ((skyLightArray[section][byteIndex] & 0xF0) | (skyLight & 0xF));
-                                } else {
-                                    blockLightArray[section][byteIndex] = (byte) ((blockLightArray[section][byteIndex] & 0x0F) | ((blockLight & 0xF) << 4));
-                                    skyLightArray[section][byteIndex] = (byte) ((skyLightArray[section][byteIndex] & 0x0F) | ((skyLight & 0xF) << 4));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            return new ChunkProcessingContext(player, chunk, packetUser, customBlockData, unload);
             
-            LightData lightData = new LightData();
-            lightData.setBlockLightArray(blockLightArray);
-            lightData.setSkyLightArray(skyLightArray);
-            lightData.setBlockLightCount(ySections);
-            lightData.setSkyLightCount(ySections);
-            
-            // Set light masks
-            BitSet blockLightMask = new BitSet(ySections);
-            BitSet skyLightMask = new BitSet(ySections);
-            for (int i = 0; i < ySections; i++) {
-                blockLightMask.set(i);
-                skyLightMask.set(i);
-            }
-            lightData.setBlockLightMask(blockLightMask);
-            lightData.setSkyLightMask(skyLightMask);
-            lightData.setEmptyBlockLightMask(new BitSet(ySections)); // No empty sections
-            lightData.setEmptySkyLightMask(new BitSet(ySections)); // No empty sections
-
-            Column column = new Column(chunk.x(), chunk.z(), true, chunks.toArray(BaseChunk[]::new), null);
-            WrapperPlayServerUnloadChunk wrapperPlayServerUnloadChunk = new WrapperPlayServerUnloadChunk(chunk.x(), chunk.z());
-            packetUser.sendPacketSilently(wrapperPlayServerUnloadChunk);
-            WrapperPlayServerChunkData chunkData = new WrapperPlayServerChunkData(column, lightData);
-            packetUser.sendPacketSilently(chunkData);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new ChunkProcessingException("創建處理上下文時發生錯誤", e);
         }
+    }
+    
+    /**
+     * 創建區塊數據包數據
+     *
+     * @param context 處理上下文
+     * @return 區塊數據包數據
+     * @throws ChunkProcessingException 當創建數據包失敗時拋出
+     */
+    private ChunkPacketData createChunkPacketData(ChunkProcessingContext context) throws ChunkProcessingException {
+        try (PerformanceMonitor.Timer timer = performanceMonitor.startTimer("createChunkPacketData")) {
+            // 對於卸載操作，創建簡單的空區塊數據
+            if (context.isUnload()) {
+                performanceMonitor.incrementCounter("emptyChunkPackets");
+                return createEmptyChunkPacketData(context);
+            }
+            
+            // 創建處理選項
+            ChunkProcessorFactory.ChunkProcessingOptions options =
+                new ChunkProcessorFactory.ChunkProcessingOptions(context.getPacketUser())
+                    .useEmptyLighting(true); // 使用空光照讓客戶端自行計算
+            
+            // 創建區塊Column
+            Column column = chunkProcessorFactory.createChunkColumn(
+                context.getPlayer(),
+                context.getChunk(),
+                context.getCustomBlockData(),
+                options
+            );
+            
+            // 創建光照數據（空光照）
+            LightData lightData = createEmptyLightData(context);
+            
+            performanceMonitor.incrementCounter("fullChunkPackets");
+            return new ChunkPacketData(column, lightData);
+            
+        } catch (Exception e) {
+            throw new ChunkProcessingException("創建區塊數據包數據時發生錯誤", e);
+        }
+    }
+    
+    /**
+     * 創建空的區塊數據包數據（用於卸載操作）
+     *
+     * @param context 處理上下文
+     * @return 空的區塊數據包數據
+     */
+    private ChunkPacketData createEmptyChunkPacketData(ChunkProcessingContext context) {
+        // 創建空的Column和LightData
+        BaseChunk[] emptyChunks = new BaseChunk[0];
+        Column emptyColumn = new Column(context.getChunk().x(), context.getChunk().z(), true, emptyChunks, null);
+        LightData emptyLightData = createEmptyLightData(context);
+        
+        return new ChunkPacketData(emptyColumn, emptyLightData);
+    }
+    
+    /**
+     * 創建空光照數據（讓客戶端自行計算光照）
+     *
+     * @param context 處理上下文
+     * @return 空光照數據
+     */
+    private LightData createEmptyLightData(ChunkProcessingContext context) {
+        int ySections = context.getPacketUser().getTotalWorldHeight() >> 4;
+        
+        // 創建空光照陣列
+        byte[][] emptyLightArray = new byte[ySections][];
+        for (int i = 0; i < ySections; i++) {
+            emptyLightArray[i] = new byte[2048]; // 全部為0
+        }
+        
+        // 創建空遮罩
+        BitSet emptyBitSet = new BitSet(ySections);
+        for (int i = 0; i < ySections; i++) {
+            emptyBitSet.set(i); // 標記為空，讓客戶端處理光照
+        }
+        
+        LightData lightData = new LightData();
+        lightData.setBlockLightArray(emptyLightArray);
+        lightData.setSkyLightArray(emptyLightArray);
+        lightData.setBlockLightCount(ySections);
+        lightData.setSkyLightCount(ySections);
+        lightData.setBlockLightMask(new BitSet(ySections));
+        lightData.setSkyLightMask(new BitSet(ySections));
+        lightData.setEmptyBlockLightMask(emptyBitSet);
+        lightData.setEmptySkyLightMask(emptyBitSet);
+        
+        return lightData;
+    }
+    
+    /**
+     * 發送區塊數據包
+     *
+     * @param packetUser 數據包用戶
+     * @param chunk 區塊
+     * @param packetData 數據包數據
+     */
+    private void sendChunkPackets(User packetUser, BlocketChunk chunk, ChunkPacketData packetData) {
+        // 先發送卸載數據包
+        WrapperPlayServerUnloadChunk unloadPacket = new WrapperPlayServerUnloadChunk(chunk.x(), chunk.z());
+        packetUser.sendPacketSilently(unloadPacket);
+        
+        // 再發送區塊數據包
+        WrapperPlayServerChunkData chunkDataPacket = new WrapperPlayServerChunkData(
+            packetData.getColumn(),
+            packetData.getLightData()
+        );
+        packetUser.sendPacketSilently(chunkDataPacket);
+    }
+    
+    /**
+     * 處理區塊處理異常
+     *
+     * @param player 玩家
+     * @param chunk 區塊
+     * @param e 異常
+     */
+    private void handleChunkProcessingError(Player player, BlocketChunk chunk, ChunkProcessingException e) {
+        String errorMessage = String.format(
+            "處理區塊時發生錯誤 - 玩家: %s, 區塊: (%d, %d), 錯誤: %s",
+            player.getName(), chunk.x(), chunk.z(), e.getMessage()
+        );
+        
+        // 記錄詳細錯誤信息
+        api.getOwnerPlugin().getLogger().warning(errorMessage);
+        if (e.getCause() != null) {
+            api.getOwnerPlugin().getLogger().warning("原因: " + e.getCause().getMessage());
+        }
+        
+        // 可以選擇通知玩家或進行其他恢復操作
+        // player.sendMessage("區塊載入時發生錯誤，請稍後再試");
+    }
+    
+    /**
+     * 處理意外錯誤
+     *
+     * @param player 玩家
+     * @param chunk 區塊
+     * @param e 異常
+     */
+    private void handleUnexpectedError(Player player, BlocketChunk chunk, Exception e) {
+        String errorMessage = String.format(
+            "處理區塊時發生意外錯誤 - 玩家: %s, 區塊: (%d, %d)",
+            player.getName(), chunk.x(), chunk.z()
+        );
+        
+        api.getOwnerPlugin().getLogger().severe(errorMessage);
+        e.printStackTrace();
+    }
+    
+    /**
+     * 獲取性能監控器
+     *
+     * @return 性能監控器實例
+     */
+    public PerformanceMonitor getPerformanceMonitor() {
+        return performanceMonitor;
+    }
+    
+    /**
+     * 獲取性能統計報告
+     *
+     * @return 性能統計報告字符串
+     */
+    public String getPerformanceReport() {
+        return performanceMonitor.generateReport();
+    }
+    
+    /**
+     * 重置性能統計
+     */
+    public void resetPerformanceStats() {
+        performanceMonitor.resetAll();
     }
 
     /**
@@ -530,5 +661,18 @@ public class BlockChangeManager {
         playerBlockChanges.clear();
         playerViewBlocks.clear();
         blockDataToId.clear();
+        
+        // 清理對象池
+        if (chunkProcessorFactory != null) {
+            chunkProcessorFactory.clearCaches();
+        }
+        blockDataMapPool.clear();
+        chunkListPool.clear();
+        lightDataArrayPool.clear();
+        
+        // 輸出性能報告
+        if (api.getOwnerPlugin().getLogger() != null) {
+            api.getOwnerPlugin().getLogger().info("BlockChangeManager 性能統計:\n" + performanceMonitor.generateReport());
+        }
     }
 }
