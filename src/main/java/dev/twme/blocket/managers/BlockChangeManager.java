@@ -693,7 +693,16 @@ public class BlockChangeManager {
                 .useEmptyLighting(!preserveLighting)
                 .preserveOriginalLighting(preserveLighting);
             Column column = chunkProcessorFactory.createChunkColumn(context.getPlayer(), context.getChunk(), context.getCustomBlockData(), options);
-            LightData lightData = createEmptyLightData(context);
+            
+            // 根據配置決定光線數據處理策略
+            LightData lightData;
+            if (preserveLighting) {
+                // 從Column中提取正確的光線數據
+                lightData = extractLightDataFromColumn(column, context);
+            } else {
+                // 向後兼容：使用空光線數據
+                lightData = createEmptyLightData(context);
+            }
 
             performanceMonitor.incrementCounter("fullChunkPackets");
             return new ChunkPacketData(column, lightData);
@@ -713,6 +722,38 @@ public class BlockChangeManager {
         Column emptyColumn = new Column(context.getChunk().x(), context.getChunk().z(), true, emptyChunks, null);
         LightData emptyLightData = createEmptyLightData(context);
         return new ChunkPacketData(emptyColumn, emptyLightData);
+    }
+
+    /**
+     * Extracts light data from the Column object created by ChunkProcessorFactory.
+     * This method retrieves the proper lighting data when preserveOriginalLighting is enabled.
+     *
+     * @param column The column containing chunk data with lighting information
+     * @param context The processing context
+     * @return Light data extracted from the column
+     * @throws ChunkProcessingException if light data extraction fails
+     */
+    private LightData extractLightDataFromColumn(Column column, ChunkProcessingContext context) throws ChunkProcessingException {
+        try {
+            // 使用 LightDataProcessor 來創建正確的光照數據
+            // 由於 Column 對象是由 ChunkProcessorFactory 創建的，它已經包含了正確的光照處理
+            // 我們需要從原始區塊快照中提取光照數據
+            
+            int ySections = context.getPacketUser().getTotalWorldHeight() >> 4;
+            org.bukkit.Chunk bukkitChunk = context.getPlayer().getWorld().getChunkAt(context.getChunk().x(), context.getChunk().z());
+            org.bukkit.ChunkSnapshot chunkSnapshot = bukkitChunk.getChunkSnapshot();
+            int maxHeight = context.getPlayer().getWorld().getMaxHeight();
+            int minHeight = context.getPlayer().getWorld().getMinHeight();
+            
+            // 使用 LightDataProcessor 創建完整的光照數據
+            dev.twme.blocket.processors.LightDataProcessor lightProcessor = new dev.twme.blocket.processors.LightDataProcessor();
+            return lightProcessor.createLightData(chunkSnapshot, ySections, minHeight, maxHeight);
+            
+        } catch (Exception e) {
+            // 如果提取光照數據失敗，回退到空光照數據以確保向後兼容性
+            api.getOwnerPlugin().getLogger().warning("Failed to extract light data from column, falling back to empty light data: " + e.getMessage());
+            return createEmptyLightData(context);
+        }
     }
 
     /**

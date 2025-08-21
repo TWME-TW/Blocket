@@ -6,7 +6,7 @@
 
     <groupId>dev.twme</groupId>
     <artifactId>blocket-api</artifactId>
-    <version>1.0.1.6</version>
+    <version>1.0.1.17</version>
     <packaging>jar</packaging>
 
     <name>Blocket API</name>
