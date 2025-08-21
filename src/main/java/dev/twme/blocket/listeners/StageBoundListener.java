@@ -112,17 +112,21 @@ public class StageBoundListener implements Listener {
         // Iterate through stages and fire enter/exit events accordingly.
         for (Stage stage : stages) {
             if (stage.isLocationWithin(event.getTo())) {
-                PlayerEnterStageEvent enterEvent = new PlayerEnterStageEvent(stage, player);
-                enterEvent.callEvent();
-                if (enterEvent.isCancelled()) {
-                    event.setCancelled(true);
-                }
+                Bukkit.getScheduler().runTaskAsynchronously(BlocketAPI.getInstance().getOwnerPlugin(), () -> {
+                    PlayerEnterStageEvent enterEvent = new PlayerEnterStageEvent(stage, player);
+                    enterEvent.callEvent();
+                    if (enterEvent.isCancelled()) {
+                        Bukkit.getScheduler().runTask(BlocketAPI.getInstance().getOwnerPlugin(), () -> event.setCancelled(true));
+                    }
+                });
             } else if (stage.isLocationWithin(event.getFrom())) {
-                PlayerExitStageEvent exitEvent = new PlayerExitStageEvent(stage, player);
-                exitEvent.callEvent();
-                if (exitEvent.isCancelled()) {
-                    event.setCancelled(true);
-                }
+                Bukkit.getScheduler().runTaskAsynchronously(BlocketAPI.getInstance().getOwnerPlugin(), () -> {
+                    PlayerExitStageEvent exitEvent = new PlayerExitStageEvent(stage, player);
+                    exitEvent.callEvent();
+                    if (exitEvent.isCancelled()) {
+                        Bukkit.getScheduler().runTask(BlocketAPI.getInstance().getOwnerPlugin(), () -> event.setCancelled(true));
+                    }
+                });
             }
         }
     }
@@ -138,7 +142,8 @@ public class StageBoundListener implements Listener {
     @EventHandler
     public void onPlayerStageJoin(PlayerJoinStageEvent event) {
         if (event.getStage().isLocationWithin(event.getPlayer().getLocation())) {
-            new PlayerEnterStageEvent(event.getStage(), event.getPlayer()).callEvent();
+            Bukkit.getScheduler().runTaskAsynchronously(BlocketAPI.getInstance().getOwnerPlugin(), () -> 
+                new PlayerEnterStageEvent(event.getStage(), event.getPlayer()).callEvent());
         }
     }
 
@@ -153,7 +158,8 @@ public class StageBoundListener implements Listener {
     @EventHandler
     public void onPlayerStageLeave(PlayerLeaveStageEvent event) {
         if (event.getStage().isLocationWithin(event.getPlayer().getLocation())) {
-            new PlayerExitStageEvent(event.getStage(), event.getPlayer()).callEvent();
+            Bukkit.getScheduler().runTaskAsynchronously(BlocketAPI.getInstance().getOwnerPlugin(), () -> 
+                new PlayerExitStageEvent(event.getStage(), event.getPlayer()).callEvent());
         }
     }
 
