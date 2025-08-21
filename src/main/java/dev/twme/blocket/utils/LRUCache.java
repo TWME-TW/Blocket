@@ -4,13 +4,16 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * LRU Cache implementation using LinkedHashMap
- * This cache automatically evicts the least recently used items when it exceeds its capacity
- * 
+ * LRU Cache implementation using LinkedHashMap.
+ * Automatically evicts the least recently used items when capacity is exceeded.
+ *
  * @param <K> Key type
  * @param <V> Value type
  */
 public class LRUCache<K, V> extends LinkedHashMap<K, V> {
+    /**
+     * The maximum number of entries the cache can hold.
+     */
     private final int capacity;
 
     /**

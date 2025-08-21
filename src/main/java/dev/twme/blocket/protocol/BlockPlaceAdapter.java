@@ -19,24 +19,8 @@ import dev.twme.blocket.models.View;
 import dev.twme.blocket.types.BlocketPosition;
 
 /**
- * Packet adapter that handles block placement interactions for virtual blocks.
- * This adapter intercepts both incoming block placement packets from clients
- * and outgoing block change packets to clients to maintain virtual block consistency.
- * 
- * <p>The adapter handles:
- * <ul>
- *   <li>Block placement event triggering for virtual blocks</li>
- *   <li>Placement cancellation for protected virtual blocks</li>
- *   <li>Outgoing block change packet filtering to prevent conflicts</li>
- *   <li>Multi-stage and multi-view block conflict resolution</li>
- * </ul>
- * 
- * <p>This adapter works in conjunction with BlockDigAdapter to provide
- * complete virtual block interaction management.</p>
- * 
- * @author TWME-TW
- * @version 1.0.0
- * @since 1.0.0
+ * Packet adapter for handling block placement interactions in Blocket.
+ * This class intercepts block placement packets and manages virtual block consistency.
  */
 public class BlockPlaceAdapter extends SimplePacketListenerAbstract {
 

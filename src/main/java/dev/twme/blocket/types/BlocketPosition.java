@@ -14,13 +14,13 @@ import io.papermc.paper.math.Position;
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter
-@Setter
 /**
  * Represents a position in 3D space for Blocket virtual blocks.
  * This class provides utility methods for converting between different position formats
  * and working with Minecraft's coordinate system.
  */
+@Getter
+@Setter
 public class BlocketPosition {
     private int x, y, z;
 

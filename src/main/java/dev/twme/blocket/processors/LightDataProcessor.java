@@ -10,26 +10,8 @@ import dev.twme.blocket.constants.ChunkConstants;
 import dev.twme.blocket.exceptions.ChunkProcessingException;
 
 /**
- * 光照數據處理器
- * 負責處理區塊的光照數據提取、打包和創建LightData對象
- * 
- * <p>主要功能包括：
- * <ul>
- *   <li>從ChunkSnapshot提取方塊光照和天空光照數據</li>
- *   <li>將光照值打包為半字節格式</li>
- *   <li>創建完整的LightData對象</li>
- *   <li>處理光照遮罩和空區段標記</li>
- * </ul>
- * 
- * <p>光照數據格式說明：
- * 每個光照值佔4位（0-15），兩個光照值打包為一個字節。
- * 索引計算：{@code index = y << 8 | z << 4 | x}
- * 字節索引：{@code byteIndex = index >> 1}
- * 半字節索引：{@code nibbleIndex = index & 1}
- * 
- * @author TWME-TW
- * @version 1.0.0
- * @since 1.0.0
+ * Processor for handling chunk lighting data in Blocket.
+ * Responsible for extracting, packing, and creating LightData objects for chunk sections.
  */
 public class LightDataProcessor {
     

@@ -1,5 +1,16 @@
 package dev.twme.blocket.examples;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+
 import dev.twme.blocket.api.BlocketAPI;
 import dev.twme.blocket.api.BlocketConfig;
 import dev.twme.blocket.models.Audience;
@@ -8,19 +19,11 @@ import dev.twme.blocket.models.Stage;
 import dev.twme.blocket.models.View;
 import dev.twme.blocket.types.BlocketPosition;
 import dev.twme.blocket.utils.BlockUtils;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 /**
- * Example showing how to use Blocket as a library in your plugin
+ * Example plugin demonstrating how to use Blocket API as a library.
+ * This class provides sample usage for initializing Blocket, creating stages,
+ * and managing virtual blocks in a custom plugin environment.
  */
 public class BlocketExamplePlugin extends JavaPlugin {
     
@@ -117,7 +120,11 @@ public class BlocketExamplePlugin extends JavaPlugin {
     }
     
     /**
-     * Example: Create a farm with different crop ages
+    * Example: Create a farm with different crop ages
+    *
+    * @param player 玩家
+    * @param corner1 農場第一角落座標
+    * @param corner2 農場第二角落座標
      */
     public void createPrivateFarm(Player player, Location corner1, Location corner2) {
         // Create wheat farm with different growth stages
@@ -152,7 +159,10 @@ public class BlocketExamplePlugin extends JavaPlugin {
     }
     
     /**
-     * Example: Dynamic view management
+    * Example: Dynamic view management
+    *
+    * @param player 玩家
+    * @param stageName 要加入秘密層的舞台名稱
      */
     public void addSecretLayer(Player player, String stageName) {
         Stage stage = blocketAPI.getStageManager().getStage(stageName);

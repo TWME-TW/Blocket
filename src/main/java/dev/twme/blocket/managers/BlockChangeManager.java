@@ -85,7 +85,13 @@ public class BlockChangeManager {
     );
 
     // Per-player block changes: PlayerUUID -> (BlocketChunk -> (BlocketPosition -> BlockData))
-    // This is updated incrementally as views are added/removed or blocks change.
+            /**
+             * 發送區塊封包給指定玩家。
+             *
+             * @param player 目標玩家
+             * @param chunk 目標區塊
+             * @param unload 是否為卸載操作
+             */
     // Using ConcurrentHashMap for thread-safe operations
     private final Map<UUID, Map<BlocketChunk, Map<BlocketPosition, BlockData>>> playerBlockChanges = new ConcurrentHashMap<>();
 
@@ -369,7 +375,15 @@ public class BlockChangeManager {
     private void cancelTask(UUID playerId) {
         Optional.ofNullable(blockChangeTasks.remove(playerId)).ifPresent(BukkitTask::cancel);
     }
-
+    
+    
+    /**
+     * Sends a chunk packet to the specified player.
+     *
+     * @param player The target player to send the chunk packet to
+     * @param chunk The chunk to be sent
+     * @param unload Whether this is an unload operation
+     */
     public void sendChunkPacket(Player player, BlocketChunk chunk, boolean unload) {
         executorService.submit(() -> processAndSendChunk(player, chunk, unload));
     }

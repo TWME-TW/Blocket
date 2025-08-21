@@ -5,20 +5,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
- * 性能監控器
- * 用於追蹤和統計各種操作的性能指標
- * 
- * <p>功能包括：
- * <ul>
- *   <li>操作計數統計</li>
- *   <li>執行時間測量</li>
- *   <li>平均時間計算</li>
- *   <li>性能報告生成</li>
- * </ul>
- * 
- * @author TWME-TW
- * @version 1.0.0
- * @since 1.0.0
+ * Performance monitor for tracking and reporting operation statistics in Blocket.
+ * Provides counters, timing, and reporting for various operations.
  */
 public class PerformanceMonitor {
     
@@ -173,6 +161,11 @@ public class PerformanceMonitor {
         private final String operation;
         private final long startTime;
         
+        /**
+         * Constructs a Timer for measuring operation duration.
+         * @param monitor The PerformanceMonitor instance
+         * @param operation The operation name to track
+         */
         public Timer(PerformanceMonitor monitor, String operation) {
             this.monitor = monitor;
             this.operation = operation;

@@ -280,28 +280,54 @@ public class ChunkProcessorFactory {
         private boolean useEmptyLighting = false;
         private int biomeId = ChunkConstants.DEFAULT_BIOME_ID;
         
+        /**
+         * Constructs ChunkProcessingOptions with the specified packet user.
+         * @param packetUser The user for packet processing
+         */
         public ChunkProcessingOptions(User packetUser) {
             this.packetUser = packetUser;
         }
-        
+
+        /**
+         * Sets whether to use empty lighting for chunk processing.
+         * @param useEmptyLighting true to use empty lighting, false otherwise
+         * @return this ChunkProcessingOptions instance
+         */
         public ChunkProcessingOptions useEmptyLighting(boolean useEmptyLighting) {
             this.useEmptyLighting = useEmptyLighting;
             return this;
         }
-        
+
+        /**
+         * Sets the biome ID for chunk processing.
+         * @param biomeId The biome ID to set
+         * @return this ChunkProcessingOptions instance
+         */
         public ChunkProcessingOptions biomeId(int biomeId) {
             this.biomeId = biomeId;
             return this;
         }
-        
+
+        /**
+         * Gets the packet user for chunk processing.
+         * @return The packet user
+         */
         public User getPacketUser() {
             return packetUser;
         }
-        
+
+        /**
+         * Checks if empty lighting is used for chunk processing.
+         * @return true if empty lighting is used, false otherwise
+         */
         public boolean isUseEmptyLighting() {
             return useEmptyLighting;
         }
-        
+
+        /**
+         * Gets the biome ID for chunk processing.
+         * @return The biome ID
+         */
         public int getBiomeId() {
             return biomeId;
         }

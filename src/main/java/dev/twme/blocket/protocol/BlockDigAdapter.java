@@ -41,6 +41,10 @@ import dev.twme.blocket.types.BlocketPosition;
  * @version 1.0.0
  * @since 1.0.0
  */
+/**
+ * Packet adapter for handling block digging interactions in Blocket.
+ * This class intercepts player digging packets and processes them for virtual blocks.
+ */
 public class BlockDigAdapter extends SimplePacketListenerAbstract {
 
     /**
