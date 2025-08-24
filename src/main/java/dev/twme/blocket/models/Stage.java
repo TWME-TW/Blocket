@@ -216,4 +216,26 @@ public class Stage {
         }
         removeViewForPlayer(player, view);
     }
+
+    /**
+     * Sets custom block light level for a specific position in this stage.
+     * This affects the entire stage and overrides view-level lighting settings.
+     *
+     * @param position The position of the block
+     * @param blockLight The block light level (0-15)
+     * @return true if the lighting was successfully set, false otherwise
+     */
+    public boolean setStageBlockLight(@NonNull BlocketPosition position, int blockLight) {
+        return BlocketAPI.getInstance().getBlockLightingManager().setStageBlockLight(this, position, blockLight);
+    }
+
+    /**
+     * Gets the custom stage-level lighting data for a specific position.
+     *
+     * @param position The position to check
+     * @return The lighting data, or null if no custom stage lighting is set
+     */
+    public dev.twme.blocket.managers.BlockLightingManager.LightingData getStageLighting(@NonNull BlocketPosition position) {
+        return BlocketAPI.getInstance().getBlockLightingManager().getStageLighting(this.name, position);
+    }
 }

@@ -350,4 +350,69 @@ public class View {
     public void changePattern(@NonNull Pattern pattern) {
         this.pattern = pattern;
     }
+
+    /**
+     * Sets custom block light level for a specific position in this view.
+     * Block light represents light emitted by the block itself (like torches, glowstone).
+     *
+     * @param position The position of the block
+     * @param blockLight The block light level (0-15)
+     * @return true if the lighting was successfully set, false otherwise
+     */
+    public boolean setBlockLight(@NonNull BlocketPosition position, int blockLight) {
+        return BlocketAPI.getInstance().getBlockLightingManager().setBlockLight(this, position, blockLight);
+    }
+
+    /**
+     * Sets custom sky light level for a specific position in this view.
+     * Sky light represents natural sunlight filtering through the world.
+     *
+     * @param position The position of the block
+     * @param skyLight The sky light level (0-15)
+     * @return true if the lighting was successfully set, false otherwise
+     */
+    public boolean setSkyLight(@NonNull BlocketPosition position, int skyLight) {
+        return BlocketAPI.getInstance().getBlockLightingManager().setSkyLight(this, position, skyLight);
+    }
+
+    /**
+     * Sets both block and sky light levels for a specific position in this view.
+     *
+     * @param position The position of the block
+     * @param blockLight The block light level (0-15)
+     * @param skyLight The sky light level (0-15)
+     * @return true if both lighting values were successfully set, false otherwise
+     */
+    public boolean setLighting(@NonNull BlocketPosition position, int blockLight, int skyLight) {
+        return BlocketAPI.getInstance().getBlockLightingManager().setLighting(this, position, blockLight, skyLight);
+    }
+
+    /**
+     * Gets the custom lighting data for a specific position in this view.
+     *
+     * @param position The position to check
+     * @return The lighting data, or null if no custom lighting is set
+     */
+    public dev.twme.blocket.managers.BlockLightingManager.LightingData getLighting(@NonNull BlocketPosition position) {
+        return BlocketAPI.getInstance().getBlockLightingManager().getLighting(this.name, position);
+    }
+
+    /**
+     * Removes custom lighting for a specific position in this view.
+     *
+     * @param position The position to remove lighting from
+     * @return true if lighting was removed, false if no custom lighting existed
+     */
+    public boolean removeLighting(@NonNull BlocketPosition position) {
+        return BlocketAPI.getInstance().getBlockLightingManager().removeLighting(this.name, position);
+    }
+
+    /**
+     * Removes all custom lighting for this view.
+     *
+     * @return true if lighting was removed, false if no custom lighting existed
+     */
+    public boolean removeAllLighting() {
+        return BlocketAPI.getInstance().getBlockLightingManager().removeAllViewLighting(this.name);
+    }
 }

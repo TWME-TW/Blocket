@@ -7,6 +7,7 @@ import com.github.retrooper.packetevents.manager.server.ServerVersion;
 
 import dev.twme.blocket.listeners.StageBoundListener;
 import dev.twme.blocket.managers.BlockChangeManager;
+import dev.twme.blocket.managers.BlockLightingManager;
 import dev.twme.blocket.managers.StageManager;
 import dev.twme.blocket.protocol.BlockDigAdapter;
 import dev.twme.blocket.protocol.BlockPlaceAdapter;
@@ -27,6 +28,7 @@ public class BlocketAPI {
     private final Plugin ownerPlugin;
     private final StageManager stageManager;
     private final BlockChangeManager blockChangeManager;
+    private final BlockLightingManager blockLightingManager;
     private final ServerVersion serverVersion;
     private final BlocketConfig config;
     
@@ -52,6 +54,7 @@ public class BlocketAPI {
         // Initialize managers
         this.stageManager = new StageManager(this);
         this.blockChangeManager = new BlockChangeManager(this);
+        this.blockLightingManager = new BlockLightingManager();
         
         plugin.getLogger().info("Blocket API core initialized for plugin: " + plugin.getName());
     }

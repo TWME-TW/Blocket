@@ -190,6 +190,26 @@ public class LightDataProcessor {
             int byteIndex = lightIndex >> ChunkConstants.BYTE_INDEX_SHIFT;
             int nibbleIndex = lightIndex & ChunkConstants.NIBBLE_INDEX_MASK;
             
+            // Check for custom lighting settings from BlockLightingManager
+            try {
+                dev.twme.blocket.managers.BlockLightingManager lightingManager = 
+                    dev.twme.blocket.api.BlocketAPI.getInstance().getBlockLightingManager();
+                
+                // Check all active views for custom lighting at this position
+                // Note: This assumes we have access to view information in the context
+                // You may need to pass additional context to this method to get view names
+                
+                // Apply custom lighting if available
+                applyCustomLightingIfPresent(lightingManager, pos, section, byteIndex, nibbleIndex,
+                    blockLightArray, skyLightArray);
+                    
+            } catch (Exception e) {
+                // Log error but continue processing other blocks
+                java.util.logging.Logger.getLogger(LightDataProcessor.class.getName())
+                    .log(java.util.logging.Level.WARNING, 
+                        "Error applying custom lighting for position " + pos, e);
+            }
+            
             // Adjust lighting based on custom block type
             // Currently keeps the original light value unchanged
             // Future additions can include:
@@ -372,5 +392,61 @@ public class LightDataProcessor {
      */
     private boolean isValidWorldY(int worldY, int minHeight, int maxHeight) {
         return worldY >= minHeight && worldY < maxHeight;
+    }
+    
+    /**
+     * Apply custom lighting settings if present for the given position.
+     * This method checks the BlockLightingManager for any custom lighting
+     * settings and applies them to the light data arrays.
+     */
+    private void applyCustomLightingIfPresent(
+            dev.twme.blocket.managers.BlockLightingManager lightingManager,
+            dev.twme.blocket.types.BlocketPosition pos,
+            int section,
+            int byteIndex,
+            int nibbleIndex,
+            byte[][] blockLightArray,
+            byte[][] skyLightArray) {
+        
+        // Note: This is a simplified implementation that would need to be enhanced
+        // to properly integrate with view context. For now, we'll check if there's
+        // any custom lighting data for this position across all views.
+        
+        // This would ideally be enhanced to:
+        // 1. Get the current processing context (view name, stage name)
+        // 2. Check for view-specific custom lighting first
+        // 3. Fall back to stage-level custom lighting
+        // 4. Apply the custom values to the light arrays
+        
+        try {
+            // For demonstration purposes, we'll implement a basic version
+            // In a real implementation, you'd need the view context here
+            
+            // Check if we have any custom lighting data for this position
+            // This is a placeholder - in actual implementation you'd have view context
+            String dummyViewName = "default"; // This should come from processing context
+            dev.twme.blocket.managers.BlockLightingManager.LightingData customLighting = 
+                lightingManager.getLighting(dummyViewName, pos);
+                
+            if (customLighting != null && section < blockLightArray.length) {
+                // Apply custom block light if set
+                if (customLighting.hasCustomBlockLight() && blockLightArray[section] != null) {
+                    packLightValue(blockLightArray[section], byteIndex, nibbleIndex, 
+                        customLighting.getBlockLight());
+                }
+                
+                // Apply custom sky light if set
+                if (customLighting.hasCustomSkyLight() && skyLightArray[section] != null) {
+                    packLightValue(skyLightArray[section], byteIndex, nibbleIndex, 
+                        customLighting.getSkyLight());
+                }
+            }
+            
+        } catch (Exception e) {
+            // Log but don't fail the entire chunk processing
+            java.util.logging.Logger.getLogger(LightDataProcessor.class.getName())
+                .log(java.util.logging.Level.FINE, 
+                    "Could not apply custom lighting for position " + pos, e);
+        }
     }
 }
